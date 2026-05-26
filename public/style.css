@@ -2,25 +2,25 @@
    ENTERPRISE DARK NEOBRUTALISM SYSTEM (style.css)
    ───────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Industrial Brutalist Palette Colorways */
-  --bg-primary: #3B3B3B;     /* Medium dark industrial gray */
-  --bg-secondary: #2E2E2E;   /* Deep industrial gray */
-  --bg-tertiary: #1C1C1C;    /* Heavy dark charcoal for headers/panels */
-  --bg-input: #F1F1F1;       /* Light warm gray for text inputs */
+  /* Vibrant Neobrutalism Color Clash Palette */
+  --bg-primary: #1D3557;     /* Deep Prussian blue backdrop */
+  --bg-secondary: #457B9D;   /* Solid Slate blue for cards & panels */
+  --bg-tertiary: #1A2E4C;    /* Deeper dark navy for terminals/sidebars */
+  --bg-input: #F1FAEE;       /* Warm Creme for high-contrast input boxes */
   
-  /* Saturated Industrial Accents */
-  --color-orange: #FF6F20;   /* Vibrant industrial safety orange */
-  --color-violet: #FF6F20;   /* Safety Orange fallback */
-  --color-cyan: #FF6F20;     /* Safety Orange fallback */
-  --color-pink: #FF6F20;     /* Safety Orange fallback */
-  --color-green: #F1F1F1;    /* Clean warm gray for successful stages */
-  --color-muted: #BEC3C7;    /* Muted slate gray */
-  --color-white: #F1F1F1;    /* Warm off-white text */
-  --color-black: #000000;    /* Solid black borders */
+  /* Saturated Brutalist Color Clash Accents */
+  --color-orange: #F3722C;   /* Electric safety orange for primary actions */
+  --color-violet: #E63946;   /* Vibrant cherry red for active badges/alerts */
+  --color-cyan: #F9C74F;     /* Sunshine yellow for active step frames/tab highlights */
+  --color-pink: #F3722C;     /* Safety orange fallback */
+  --color-green: #2A9D8F;    /* Vibrant teal green for stage completions */
+  --color-muted: #D8E2DC;    /* Soft warm silver-gray for secondary text */
+  --color-white: #F1FAEE;    /* Stark warm Creme for body text */
+  --color-black: #000000;    /* Thick black borders and dark text */
   
   /* Structural Tokens */
   --border-brutalist: 3px solid #000000;
-  --border-radius: 4px; /* Strict geometric sharp corners */
+  --border-radius: 4px;      /* Strict geometric sharp corners */
   
   /* Hard Unblurred Drop Shadows */
   --shadow-flat: 6px 6px 0px #000000;
@@ -30,7 +30,7 @@
   
   --font-sans: 'Outfit', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* Tactile physics */
+  --transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* Bouncy tactile physics */
 }
 
 /* Reset */
