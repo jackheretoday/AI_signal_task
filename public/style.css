@@ -2,25 +2,25 @@
    ENTERPRISE DARK NEOBRUTALISM SYSTEM (style.css)
    ───────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Brutalist Dark Colorways */
-  --bg-primary: #0A0A0F;
-  --bg-secondary: #141424;
-  --bg-tertiary: #1D1D35;
-  --bg-input: #FFFFFF;
+  /* Industrial Brutalist Palette Colorways */
+  --bg-primary: #3B3B3B;     /* Medium dark industrial gray */
+  --bg-secondary: #2E2E2E;   /* Deep industrial gray */
+  --bg-tertiary: #1C1C1C;    /* Heavy dark charcoal for headers/panels */
+  --bg-input: #F1F1F1;       /* Light warm gray for text inputs */
   
-  /* Saturation Neon Colors */
-  --color-violet: #C04DF9;
-  --color-cyan: #00F0FF;
-  --color-green: #39FF14;
-  --color-pink: #FF007F;
-  --color-orange: #FF7F00;
-  --color-muted: #A0A1B8;
-  --color-white: #FFFFFF;
-  --color-black: #000000;
+  /* Saturated Industrial Accents */
+  --color-orange: #FF6F20;   /* Vibrant industrial safety orange */
+  --color-violet: #FF6F20;   /* Safety Orange fallback */
+  --color-cyan: #FF6F20;     /* Safety Orange fallback */
+  --color-pink: #FF6F20;     /* Safety Orange fallback */
+  --color-green: #F1F1F1;    /* Clean warm gray for successful stages */
+  --color-muted: #BEC3C7;    /* Muted slate gray */
+  --color-white: #F1F1F1;    /* Warm off-white text */
+  --color-black: #000000;    /* Solid black borders */
   
   /* Structural Tokens */
   --border-brutalist: 3px solid #000000;
-  --border-radius: 4px; /* Brutalism demands flat, geometric sharp corners */
+  --border-radius: 4px; /* Strict geometric sharp corners */
   
   /* Hard Unblurred Drop Shadows */
   --shadow-flat: 6px 6px 0px #000000;
@@ -30,7 +30,7 @@
   
   --font-sans: 'Outfit', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* Bouncy physics */
+  --transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); /* Tactile physics */
 }
 
 /* Reset */
