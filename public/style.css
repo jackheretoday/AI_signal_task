@@ -1232,6 +1232,10 @@ textarea:focus {
   width: 100% !important;
   border-collapse: collapse !important;
   margin-bottom: 25px !important;
+  page-break-inside: auto !important;
+}
+
+.pdf-table tr {
   page-break-inside: avoid !important;
 }
 
@@ -1281,9 +1285,9 @@ textarea:focus {
 
 /* DB Table grids */
 .pdf-grid-db {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 15px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
 }
 
 .pdf-db-card {

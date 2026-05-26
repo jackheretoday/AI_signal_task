@@ -497,134 +497,261 @@ document.addEventListener("DOMContentLoaded", () => {
       hour: '2-digit', minute: '2-digit' 
     });
 
-    // 1. Dynamic UI pages
-    const uiPagesHtml = (schemas.uiSchema?.pages || schemas.ui?.pages || []).map(p => `
-      <div style="margin-bottom: 25px; border-bottom: 1px solid #E2E8F0; padding-bottom: 20px; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <h4 style="margin: 0; color: #1D3557; font-size: 14px; font-weight: 800;">Page Name: ${p.name}</h4>
-          ${p.isGated ? `
-            <span style="font-size: 10px; background-color: #F8FAFC; border: 1px solid #CBD5E1; color: #1D3557; padding: 2px 8px; border-radius: 4px; font-weight: 700;">
-              🔐 Gated: ${p.gatedRoles.join(", ")}
-            </span>
-          ` : `
-            <span style="font-size: 10px; background-color: #F0FDF4; border: 1px solid #BBF7D0; color: #15803D; padding: 2px 8px; border-radius: 4px; font-weight: 700;">
-              🔓 Public
-            </span>
-          `}
-        </div>
-        <div style="font-size: 11px; color: #4A5568; margin-bottom: 12px;">
-          Route Path: <code style="font-family: 'JetBrains Mono', monospace; background-color: #F1F5F9; padding: 2px 4px; border-radius: 3px; font-weight: 600;">${p.path}</code>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
-          ${(p.components || []).map(comp => `
-            <div style="border: 1px solid #CBD5E1; border-radius: 6px; padding: 12px; background-color: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-              <strong style="font-size: 12px; display: block; margin-bottom: 4px; color: #1D3557; font-weight: 800;">⧉ ${comp.componentName}</strong>
-              <span style="font-size: 10px; color: #4A5568; display: block; margin-bottom: 8px; border-bottom: 1px dashed #E2E8F0; padding-bottom: 4px;">Binding Entity: <strong style="color: #1A202C;">${comp.bindsToEntity || 'N/A'}</strong></span>
-              <div style="font-size: 10px; color: #2D3748; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
-                <span style="font-weight: 700; color: #718096; margin-right: 4px;">Fields:</span>
-                ${(comp.fields || []).map(field => `<span style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 9px;">${field}</span>`).join("")}
+    // ── PAGE-BUDGET AUDITING LOOP & CHUNKING FUNCTION ─────────────────────────
+    const chunkArray = (arr, size) => {
+      const chunks = [];
+      for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
+      }
+      return chunks;
+    };
+
+    // Shard generated block chunks to prevent cross-page content tearing and table fragmentation
+    const allUiPages      = schemas.uiSchema?.pages || schemas.ui?.pages || [];
+    const uiPagesChunks   = chunkArray(allUiPages, 3); // Max 3 UI screens per printed A4 page
+
+    const allApiRoutes    = schemas.apiSchema?.routes || schemas.api?.routes || [];
+    const apiRoutesChunks = chunkArray(allApiRoutes, 6); // Max 6 API routes per page for data row cohesion
+
+    const allDbTables     = schemas.dbSchema?.tables || schemas.db?.tables || [];
+    const dbTablesChunks  = chunkArray(allDbTables, 3); // Max 3 relational DB tables per page
+
+    const allAuthScopes   = schemas.authSchema?.rolePermissions || schemas.auth?.rolePermissions || [];
+    const authScopesChunks = chunkArray(allAuthScopes, 3); // Max 3 security RBAC scopes per page
+
+    const allAssumptions  = lastCompilationResult.systemAssumptions || schemas.systemAssumptions || [];
+    const assumptionsChunks = chunkArray(allAssumptions, 4); // Max 4 assumptions per page
+
+    // Programmatically calculate exact starting page indices for Table of Contents dot leaders
+    const pageSec1 = 3;
+    const pageSec2 = 4;
+    const pageSec3 = pageSec2 + uiPagesChunks.length;
+    const pageSec4 = pageSec3 + apiRoutesChunks.length;
+    const pageSec5 = pageSec4 + dbTablesChunks.length;
+    const pageSec6 = pageSec5 + authScopesChunks.length;
+
+    // ── CHAPTER 2.0: UI Blueprints (Atomic Card blocks with page-break protection)
+    const uiPagesHtml = uiPagesChunks.map((chunk, chunkIdx) => {
+      const chunkHtml = chunk.map(p => `
+        <div style="margin-bottom: 20px; border-bottom: 1px solid #E2E8F0; padding-bottom: 15px; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <h4 style="margin: 0; color: #1D3557; font-size: 13px; font-weight: 800;">Page Name: ${p.name}</h4>
+            ${p.isGated ? `
+              <span style="font-size: 9px; background-color: #F8FAFC; border: 1px solid #CBD5E1; color: #1D3557; padding: 1px 6px; border-radius: 4px; font-weight: 700;">
+                🔐 Gated: ${p.gatedRoles.join(", ")}
+              </span>
+            ` : `
+              <span style="font-size: 9px; background-color: #F0FDF4; border: 1px solid #BBF7D0; color: #15803D; padding: 1px 6px; border-radius: 4px; font-weight: 700;">
+                🔓 Public
+              </span>
+            `}
+          </div>
+          <div style="font-size: 10px; color: #4A5568; margin-bottom: 8px;">
+            Route Path: <code style="font-family: 'JetBrains Mono', monospace; background-color: #F1F5F9; padding: 1px 3px; border-radius: 3px; font-weight: 600;">${p.path}</code>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            ${(p.components || []).map(comp => `
+              <div style="border: 1px solid #CBD5E1; border-radius: 6px; padding: 10px; background-color: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <strong style="font-size: 11px; display: block; margin-bottom: 3px; color: #1D3557; font-weight: 800;">⧉ ${comp.componentName}</strong>
+                <span style="font-size: 9px; color: #4A5568; display: block; margin-bottom: 6px; border-bottom: 1px dashed #E2E8F0; padding-bottom: 3px;">Binding Entity: <strong style="color: #1A202C;">${comp.bindsToEntity || 'N/A'}</strong></span>
+                <div style="font-size: 9px; color: #2D3748; display: flex; flex-wrap: wrap; gap: 3px; align-items: center;">
+                  <span style="font-weight: 700; color: #718096; margin-right: 3px;">Fields:</span>
+                  ${(comp.fields || []).map(field => `<span style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 0px 4px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 8px;">${field}</span>`).join("")}
+                </div>
               </div>
-            </div>
-          `).join("")}
+            `).join("")}
+          </div>
         </div>
-      </div>
-    `).join("");
+      `).join("");
 
-    // 2. Dynamic API Routes Table
-    const apiRoutesHtml = (schemas.apiSchema?.routes || schemas.api?.routes || []).map(r => `
-      <tr>
-        <td style="text-align: center;"><span class="pdf-badge pdf-badge-${r.method.toLowerCase()}">${r.method}</span></td>
-        <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;"><code>${schemas.apiSchema?.basePath || schemas.api?.basePath || ""}${r.path}</code></td>
-        <td style="font-weight: 700; color: #1D3557;">${r.roles ? r.roles.join(", ") : 'Public'}</td>
-        <td style="color: #4A5568;">${r.entity || 'N/A'}</td>
-        <td style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #2D3748;">
-          ${Object.entries(r.requestPayload || {}).map(([k,v]) => `<strong>${k}</strong>: <span style="color: #457B9D;">${v}</span>`).join("<br>") || '<span style="color: #A0AEC0;">None</span>'}
-        </td>
-      </tr>
-    `).join("");
-
-    // 3. Dynamic DB Schema
-    const dbTablesHtml = (schemas.dbSchema?.tables || schemas.db?.tables || []).map(t => `
-      <div class="pdf-db-card">
-        <div class="pdf-db-header">
-          <span>📁 Table: ${t.tableName}</span>
-          <span class="pdf-entity-tag" style="background-color: #E2E8F0; color: #1D3557; padding: 2px 6px; border-radius: 4px; font-size: 9px;">Entity: ${t.entity}</span>
+      return `
+        <div class="pdf-page">
+          <div class="pdf-chapter-header">
+            <span class="pdf-chapter-num">Section 2.${chunkIdx + 1}</span>
+            <h2>User Interface (UI) Screen Mappings ${uiPagesChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
+          </div>
+          <div class="pdf-chapter-desc">
+            Formal frontend application interface blueprints detailing navigable screens, mapped data component envelopes, and gated security boundary roles.
+          </div>
+          ${chunkHtml}
         </div>
-        <div class="pdf-db-body">
-          <table class="pdf-table" style="margin-top: 0; margin-bottom: 10px;">
+      `;
+    }).join("");
+
+    // ── CHAPTER 3.0: REST API Specifications (Cohesive structural tables)
+    const apiRoutesHtml = apiRoutesChunks.map((chunk, chunkIdx) => {
+      const rowsHtml = chunk.map(r => `
+        <tr>
+          <td style="text-align: center;"><span class="pdf-badge pdf-badge-${r.method.toLowerCase()}">${r.method}</span></td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px;"><code>${schemas.apiSchema?.basePath || schemas.api?.basePath || ""}${r.path}</code></td>
+          <td style="font-weight: 700; color: #1D3557;">${r.roles ? r.roles.join(", ") : 'Public'}</td>
+          <td style="color: #4A5568;">${r.entity || 'N/A'}</td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #2D3748;">
+            ${Object.entries(r.requestPayload || {}).map(([k,v]) => `<strong>${k}</strong>: <span style="color: #457B9D;">${v}</span>`).join("<br>") || '<span style="color: #A0AEC0;">None</span>'}
+          </td>
+        </tr>
+      `).join("");
+
+      return `
+        <div class="pdf-page">
+          <div class="pdf-chapter-header">
+            <span class="pdf-chapter-num">Section 3.${chunkIdx + 1}</span>
+            <h2>RESTful API Endpoint Specifications ${apiRoutesChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
+          </div>
+          <div class="pdf-chapter-desc">
+            Synchronized REST routing endpoints defining expected request methodologies, payload JSON structures, security parameters, and bound data entities.
+          </div>
+          <table class="pdf-table">
             <thead>
               <tr>
-                <th style="text-align:left;">Column</th>
-                <th style="text-align:left; width: 80px;">Type</th>
-                <th style="text-align:left;">Attributes</th>
+                <th style="width: 80px;">Method</th>
+                <th>Route Path</th>
+                <th>Required Role(s)</th>
+                <th>Entity Bind</th>
+                <th>Payload Properties</th>
               </tr>
             </thead>
             <tbody>
-               ${(t.columns || []).map(c => `
-                 <tr>
-                   <td style="font-weight: 700; color: #1A202C;">${c.name}</td>
-                   <td><code style="font-family: 'JetBrains Mono', monospace; font-size: 10px;">${c.type}</code></td>
-                   <td style="font-size: 10px; color: #4A5568;">${[c.unique ? 'unique' : '', !c.nullable ? 'not null' : '', c.default ? `default: ${c.default}` : ''].filter(Boolean).join(" | ") || 'none'}</td>
-                 </tr>
-               `).join("")}
+              ${rowsHtml}
             </tbody>
           </table>
-          ${t.foreignKeys && t.foreignKeys.length > 0 ? `
-            <div style="margin-top: 8px; font-size: 10px; border-top: 1px dashed #CBD5E1; padding-top: 8px;">
-              <strong style="color: #1D3557; display: block; margin-bottom: 4px;">Foreign Key Constraints:</strong>
-              ${t.foreignKeys.map(fk => `
-                <div style="margin-top:2px; color: #F3722C; font-family: 'JetBrains Mono', monospace;">⤷ <code>${fk.column}</code> referencing <code>${fk.referencesTable}(${fk.referencesColumn})</code></div>
-               `).join("")}
-            </div>
-          ` : ''}
         </div>
-      </div>
-    `).join("");
+      `;
+    }).join("");
 
-    // 4. Dynamic Auth Scopes
-    const authScopesHtml = (schemas.authSchema?.rolePermissions || schemas.auth?.rolePermissions || []).map(r => `
-      <div class="pdf-auth-card">
-        <h3>Role Identity: ${r.role}</h3>
-        <div style="font-size: 10px; color: #718096; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace;">Scope JWT Expiry: ${r.tokenExpiry || '24h'}</div>
-        <div style="margin-bottom: 12px;">
-          <strong style="font-size: 11px; display: block; margin-bottom: 6px; color: #137333;">✓ Allowed Access Routes:</strong>
-          <div class="pdf-list">
-             ${(r.allowedRoutes || []).map(route => `
-               <div class="pdf-list-item" style="font-family: 'JetBrains Mono', monospace; color: #2D3748; font-size: 10px;">
-                 <span style="color: #137333; margin-right: 4px;">✔</span> ${route}
-               </div>
-             `).join("")}
+    // ── CHAPTER 4.0: Relational DB Schema (Tightly structured vertical Markdown-style tabular cards)
+    const dbTablesHtml = dbTablesChunks.map((chunk, chunkIdx) => {
+      const tablesHtml = chunk.map(t => `
+        <div class="pdf-db-card" style="margin-bottom: 20px;">
+          <div class="pdf-db-header">
+            <span>📁 Table: ${t.tableName}</span>
+            <span class="pdf-entity-tag" style="background-color: #E2E8F0; color: #1D3557; padding: 2px 6px; border-radius: 4px; font-size: 9px;">Entity: ${t.entity}</span>
+          </div>
+          <div class="pdf-db-body">
+            <table class="pdf-table" style="margin-top: 0; margin-bottom: 10px;">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Column</th>
+                  <th style="text-align:left; width: 100px;">Data Type</th>
+                  <th style="text-align:left;">Attributes & Constraints</th>
+                </tr>
+              </thead>
+              <tbody>
+                 ${(t.columns || []).map(c => `
+                   <tr>
+                     <td style="font-weight: 700; color: #1A202C;">${c.name}</td>
+                     <td><code style="font-family: 'JetBrains Mono', monospace; font-size: 10px;">${c.type}</code></td>
+                     <td style="font-size: 10px; color: #4A5568;">${[c.unique ? 'unique' : '', !c.nullable ? 'not null' : '', c.default ? `default: ${c.default}` : ''].filter(Boolean).join(" | ") || 'none'}</td>
+                   </tr>
+                 `).join("")}
+              </tbody>
+            </table>
+            ${t.foreignKeys && t.foreignKeys.length > 0 ? `
+              <div style="margin-top: 8px; font-size: 10px; border-top: 1px dashed #CBD5E1; padding-top: 8px;">
+                <strong style="color: #1D3557; display: block; margin-bottom: 4px;">Foreign Key Constraints:</strong>
+                ${t.foreignKeys.map(fk => `
+                  <div style="margin-top:2px; color: #F3722C; font-family: 'JetBrains Mono', monospace;">⤷ <code>${fk.column}</code> referencing <code>${fk.referencesTable}(${fk.referencesColumn})</code></div>
+                 `).join("")}
+              </div>
+            ` : ''}
           </div>
         </div>
-        ${r.deniedRoutes && r.deniedRoutes.length > 0 ? `
-          <div style="margin-top: 12px;">
-            <strong style="font-size: 11px; display: block; margin-bottom: 6px; color: #C53030;">✗ Denied Access Routes:</strong>
+      `).join("");
+
+      return `
+        <div class="pdf-page">
+          <div class="pdf-chapter-header">
+            <span class="pdf-chapter-num">Section 4.${chunkIdx + 1}</span>
+            <h2>Relational Database Schema Architecture ${dbTablesChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
+          </div>
+          <div class="pdf-chapter-desc">
+            Full SQL schemas including tables, columns, datatypes (UUID, VARCHAR), strict nullability properties, default constraints, and foreign key linkage systems.
+          </div>
+          <div class="pdf-grid-db">
+            ${tablesHtml}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // ── CHAPTER 5.0: Security & RBAC Scopes
+    const authScopesHtml = authScopesChunks.map((chunk, chunkIdx) => {
+      const cardsHtml = chunk.map(r => `
+        <div class="pdf-auth-card">
+          <h3>Role Identity: ${r.role}</h3>
+          <div style="font-size: 10px; color: #718096; margin-bottom: 12px; font-family: 'JetBrains Mono', monospace;">Scope JWT Expiry: ${r.tokenExpiry || '24h'}</div>
+          <div style="margin-bottom: 12px;">
+            <strong style="font-size: 11px; display: block; margin-bottom: 6px; color: #137333;">✓ Allowed Access Routes:</strong>
             <div class="pdf-list">
-               ${r.deniedRoutes.map(route => `
-                 <div class="pdf-list-item" style="font-family: 'JetBrains Mono', monospace; color: #C53030; font-size: 10px;">
-                   <span style="color: #C53030; margin-right: 4px;">✘</span> ${route}
+               ${(r.allowedRoutes || []).map(route => `
+                 <div class="pdf-list-item" style="font-family: 'JetBrains Mono', monospace; color: #2D3748; font-size: 10px;">
+                   <span style="color: #137333; margin-right: 4px;">✔</span> ${route}
                  </div>
                `).join("")}
             </div>
           </div>
-        ` : ''}
-      </div>
-    `).join("");
-
-    // 5. Dynamic Assumptions
-    const assumptionsHtml = (lastCompilationResult.systemAssumptions || schemas.systemAssumptions || []).map((a, idx) => `
-      <div class="pdf-asm-card">
-        <div class="pdf-asm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <span class="pdf-asm-title" style="font-size: 13px; font-weight: 800; color: #1D3557;">${idx + 1}. ${a.assumption}</span>
+          ${r.deniedRoutes && r.deniedRoutes.length > 0 ? `
+            <div style="margin-top: 12px;">
+              <strong style="font-size: 11px; display: block; margin-bottom: 6px; color: #C53030;">✗ Denied Access Routes:</strong>
+              <div class="pdf-list">
+                 ${r.deniedRoutes.map(route => `
+                   <div class="pdf-list-item" style="font-family: 'JetBrains Mono', monospace; color: #C53030; font-size: 10px;">
+                     <span style="color: #C53030; margin-right: 4px;">✘</span> ${route}
+                   </div>
+                 `).join("")}
+            </div>
+          ` : ''}
         </div>
-        <p style="margin: 0 0 10px 0; font-size: 11px; color: #4A5568; line-height: 1.5;"><strong>Rationale:</strong> ${a.rationale}</p>
-        <div style="display: flex; gap: 6px;">
-          ${(a.affectedLayers || []).map(l => `<span class="pdf-asm-tag">${l}</span>`).join("")}
-        </div>
-      </div>
-    `).join("");
+      `).join("");
 
-    // Assemble the full report markup using standard Corporate SDD structured pages
+      return `
+        <div class="pdf-page">
+          <div class="pdf-chapter-header">
+            <span class="pdf-chapter-num">Section 5.${chunkIdx + 1}</span>
+            <h2>Role-Based Access Control (RBAC) Policies ${authScopesChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
+          </div>
+          <div class="pdf-chapter-desc">
+            Logical Role-Based Access Control matrix mapping allowed routing resources and explicit access boundaries across system user roles.
+          </div>
+          <div class="pdf-auth-grid">
+            ${cardsHtml}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    // ── CHAPTER 6.0: System Assumptions
+    const assumptionsHtml = assumptionsChunks.map((chunk, chunkIdx) => {
+      const asmCardsHtml = chunk.map((a, idx) => {
+        const absoluteIdx = chunkIdx * 4 + idx + 1;
+        return `
+          <div class="pdf-asm-card">
+            <div class="pdf-asm-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <span class="pdf-asm-title" style="font-size: 13px; font-weight: 800; color: #1D3557;">${absoluteIdx}. ${a.assumption}</span>
+            </div>
+            <p style="margin: 0 0 10px 0; font-size: 11px; color: #4A5568; line-height: 1.5;"><strong>Rationale:</strong> ${a.rationale}</p>
+            <div style="display: flex; gap: 6px;">
+              ${(a.affectedLayers || []).map(l => `<span class="pdf-asm-tag">${l}</span>`).join("")}
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="pdf-page">
+          <div class="pdf-chapter-header">
+            <span class="pdf-chapter-num">Section 6.${chunkIdx + 1}</span>
+            <h2>Derived System Design Assumptions ${assumptionsChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
+          </div>
+          <div class="pdf-chapter-desc">
+            Architectural design assumptions, rationale constraints, and impacted stack layers derived during intent compilation.
+          </div>
+          ${asmCardsHtml}
+        </div>
+      `;
+    }).join("");
+
+    // Assemble the complete report markup using standard Corporate SDD structured pages
     pdfReportTemplate.innerHTML = `
       <div class="pdf-report">
         
@@ -664,7 +791,7 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
-        <!-- PAGE 2: TABLE OF CONTENTS -->
+        <!-- PAGE 2: TABLE OF CONTENTS (Dynamically calculated based on page budget sharding) -->
         <div class="pdf-page">
           <div class="pdf-toc-container">
             <div class="pdf-toc-title">Table of Contents</div>
@@ -672,32 +799,32 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="pdf-toc-item">
                 <span class="pdf-toc-name">Section 1.0 : Executive Summary & Latency Telemetry</span>
                 <div class="pdf-toc-dots"></div>
-                <span class="pdf-toc-page-num">3</span>
+                <span class="pdf-toc-page-num">${pageSec1}</span>
               </div>
               <div class="pdf-toc-item">
                 <span class="pdf-toc-name">Section 2.0 : User Interface (UI) Screen Mappings</span>
                 <div class="pdf-toc-dots"></div>
-                <span class="pdf-toc-page-num">4</span>
+                <span class="pdf-toc-page-num">${pageSec2}</span>
               </div>
               <div class="pdf-toc-item">
                 <span class="pdf-toc-name">Section 3.0 : RESTful API Endpoint Specifications</span>
                 <div class="pdf-toc-dots"></div>
-                <span class="pdf-toc-page-num">5</span>
+                <span class="pdf-toc-page-num">${pageSec3}</span>
               </div>
               <div class="pdf-toc-item">
                 <span class="pdf-toc-name">Section 4.0 : Relational Database Schema Architecture</span>
                 <div class="pdf-toc-dots"></div>
-                <span class="pdf-toc-page-num">6</span>
+                <span class="pdf-toc-page-num">${pageSec4}</span>
               </div>
               <div class="pdf-toc-item">
                 <span class="pdf-toc-name">Section 5.0 : Role-Based Access Control (RBAC) Policies</span>
                 <div class="pdf-toc-dots"></div>
-                <span class="pdf-toc-page-num">7</span>
+                <span class="pdf-toc-page-num">${pageSec5}</span>
               </div>
               <div class="pdf-toc-item">
                 <span class="pdf-toc-name">Section 6.0 : Derived System Design Assumptions</span>
                 <div class="pdf-toc-dots"></div>
-                <span class="pdf-toc-page-num">8</span>
+                <span class="pdf-toc-page-num">${pageSec6}</span>
               </div>
             </div>
           </div>
@@ -732,82 +859,12 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
-        <!-- PAGE 4: SECTION 2.0 USER INTERFACE BLUEPRINT -->
-        <div class="pdf-page">
-          <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 2.0</span>
-            <h2>User Interface (UI) Screen Mappings</h2>
-          </div>
-          <div class="pdf-chapter-desc">
-            Formal frontend application interface blueprints detailing navigable screens, mapped data component envelopes, and gated security boundary roles.
-          </div>
-          ${uiPagesHtml}
-        </div>
-
-        <!-- PAGE 5: SECTION 3.0 REST API SPECIFICATIONS -->
-        <div class="pdf-page">
-          <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 3.0</span>
-            <h2>RESTful API Endpoint Specifications</h2>
-          </div>
-          <div class="pdf-chapter-desc">
-            Synchronized REST routing endpoints defining expected request methodologies, payload JSON structures, security parameters, and bound data entities.
-          </div>
-          <table class="pdf-table">
-            <thead>
-              <tr>
-                <th style="width: 80px;">Method</th>
-                <th>Route Path</th>
-                <th>Required Role(s)</th>
-                <th>Entity Bind</th>
-                <th>Payload Properties</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${apiRoutesHtml}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- PAGE 6: SECTION 4.0 DATABASE SCHEMA -->
-        <div class="pdf-page">
-          <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 4.0</span>
-            <h2>Relational Database Schema Architecture</h2>
-          </div>
-          <div class="pdf-chapter-desc">
-            Full SQL schemas including tables, columns, datatypes (UUID, VARCHAR), strict nullability properties, default constraints, and foreign key linkage systems.
-          </div>
-          <div class="pdf-grid-db">
-            ${dbTablesHtml}
-          </div>
-        </div>
-
-        <!-- PAGE 7: SECTION 5.0 SECURITY & RBAC -->
-        <div class="pdf-page">
-          <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 5.0</span>
-            <h2>Role-Based Access Control (RBAC) Policies</h2>
-          </div>
-          <div class="pdf-chapter-desc">
-            Logical Role-Based Access Control matrix mapping allowed routing resources and explicit access boundaries across system user roles.
-          </div>
-          <div class="pdf-auth-grid">
-            ${authScopesHtml}
-          </div>
-        </div>
-
-        <!-- PAGE 8: SECTION 6.0 SYSTEM ASSUMPTIONS -->
-        <div class="pdf-page">
-          <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 6.0</span>
-            <h2>Derived System Design Assumptions</h2>
-          </div>
-          <div class="pdf-chapter-desc">
-            Architectural design assumptions, rationale constraints, and impacted stack layers derived during intent compilation.
-          </div>
-          ${assumptionsHtml}
-        </div>
+        <!-- DYNAMIC SHARDED SECTIONS 2.0 TO 6.0 -->
+        ${uiPagesHtml}
+        ${apiRoutesHtml}
+        ${dbTablesHtml}
+        ${authScopesHtml}
+        ${assumptionsHtml}
       </div>
     `;
 
