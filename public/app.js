@@ -1,5 +1,5 @@
 /**
- * AI Signal Compiler Pipeline — Client Logic
+ * ArchForgeX Compiler Pipeline — Client Logic
  */
 document.addEventListener("DOMContentLoaded", () => {
   // ── DOM ELEMENTS ───────────────────────────────────────────────────────────
@@ -759,7 +759,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="pdf-page">
           <div class="pdf-cover-container">
             <div class="pdf-cover-header">
-              <div class="pdf-cover-org">AI Signal Compiler Engine</div>
+              <div class="pdf-cover-org">ArchForgeX Compiler Engine</div>
             </div>
             <div class="pdf-cover-body">
               <div class="pdf-cover-title">TECHNICAL SYSTEM ARCHITECTURE & SYSTEM PLAN</div>
@@ -768,7 +768,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <table class="pdf-cover-metadata-table">
                 <tr>
                   <td class="meta-label">Document ID</td>
-                  <td class="meta-value">SDD-AI-SIGNAL-${appName.toUpperCase().replace(/\s+/g, '-')}</td>
+                  <td class="meta-value">SDD-ARCHFORGEX-${appName.toUpperCase().replace(/\s+/g, '-')}</td>
                 </tr>
                 <tr>
                   <td class="meta-label">Release Version</td>
@@ -784,7 +784,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 </tr>
                 <tr>
                   <td class="meta-label">Authoring Engine</td>
-                  <td class="meta-value">AI Signal Compiler Engine (Gemini 3.5)</td>
+                  <td class="meta-value">ArchForgeX Compiler Engine (Gemini 3.5)</td>
                 </tr>
               </table>
             </div>
@@ -873,7 +873,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const opt = {
       margin:       [15, 15, 15, 15],
-      filename:     `AI-Signal-${appName.toLowerCase().replace(/\s+/g, '-')}-blueprint.pdf`,
+      filename:     `ArchForgeX-${appName.toLowerCase().replace(/\s+/g, '-')}-blueprint.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },

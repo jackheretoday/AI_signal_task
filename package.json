@@ -1,7 +1,7 @@
 {
-  "name": "ai-signal-compiler-pipeline",
+  "name": "archforgex-compiler-pipeline",
   "version": "1.0.0",
-  "description": "Software Generation Compiler Pipeline — Node.js | Express | Zod | Gemini 2.5 Flash",
+  "description": "ArchForgeX Compiler Pipeline — Node.js | Express | Zod | Gemini 3.5 Flash",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1289,7 +1289,7 @@ app.use((err, _req, res, _next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║   SOFTWARE GENERATION COMPILER PIPELINE — SERVER READY      ║");
+  console.log("║               ARCHFORGEX COMPILER — SERVER READY       ║");
   console.log(`║   Listening on http://localhost:${PORT}                          ║`);
   console.log(`║   Model: ${MODEL_ID}              ║`);
   console.log(`║   Max repairs per stage: ${MAX_REPAIRS}                               ║`);
