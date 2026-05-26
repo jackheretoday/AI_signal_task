@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Signal Compiler Pipeline — Enterprise Software Architect</title>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow particles -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header animate-fade-in">
+      <div class="header-logo">
+        <div class="logo-icon"><i class="fa-solid fa-microchip-heading"></i></div>
+        <div>
+          <h1>AI SIGNAL</h1>
+          <p class="tagline">Deterministic Software Generation Compiler Pipeline</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-primary"><i class="fa-solid fa-server"></i> Server Ready</span>
+        <span id="model-badge" class="badge badge-secondary"><i class="fa-solid fa-brain"></i> gemini-3.5-flash</span>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="workspace-grid">
+      <!-- Left Column: Input Control Panel -->
+      <section class="panel panel-left animate-slide-in-left">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-terminal text-gradient"></i> Compilation Input</h2>
+          <span class="panel-subtitle">Define your system requirements in plain English</span>
+        </div>
+        
+        <div class="panel-body">
+          <div class="input-group">
+            <label for="prompt-input">System Prompt</label>
+            <textarea id="prompt-input" placeholder="e.g. Build a multi-tenant SaaS project management tool with Admin, Manager, and Developer roles supporting task tracking, sprint planning, and Kanban boards..."></textarea>
+          </div>
+
+          <!-- Quick Templates -->
+          <div class="templates-section">
+            <span class="section-title">Quick Templates</span>
+            <div class="templates-grid">
+              <button class="btn-template" data-prompt="Build a multi-tenant SaaS project management tool with Admin, Manager, and Developer roles supporting task tracking, sprint planning, and Kanban boards.">
+                <i class="fa-solid fa-users-rectangle"></i> SaaS Project Manager
+              </button>
+              <button class="btn-template" data-prompt="Build a multi-vendor E-Commerce marketplace with Buyer, Seller, and System Admin roles, supporting product listings, shopping cart checkout, and vendor payouts.">
+                <i class="fa-solid fa-store"></i> Multi-vendor Marketplace
+              </button>
+              <button class="btn-template" data-prompt="Build an automated Clinic Patient Booking portal supporting Doctor, Nurse, and Patient roles, enabling appointment scheduling, medical histories, and digital prescriptions.">
+                <i class="fa-solid fa-user-doctor"></i> Clinic Patient Portal
+              </button>
+            </div>
+          </div>
+
+          <button id="compile-btn" class="btn btn-compile">
+            <span class="btn-text"><i class="fa-solid fa-bolt"></i> Compile Architecture</span>
+            <div class="btn-loader hidden">
+              <i class="fa-solid fa-circle-notch fa-spin"></i> Compiling...
+            </div>
+          </button>
+        </div>
+      </section>
+
+      <!-- Right Column: Status & Real-time Tracker -->
+      <section class="panel panel-right animate-slide-in-right">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-diagram-project text-gradient"></i> Compiler Pipeline</h2>
+          <span class="panel-subtitle">Deterministic 4-Stage State Isolation Engine</span>
+        </div>
+
+        <div class="panel-body pipeline-body">
+          <div class="pipeline-flow">
+            <!-- Stage 1 -->
+            <div class="pipeline-step" id="step-1">
+              <div class="step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+              <div class="step-content">
+                <div class="step-meta">
+                  <h3>Stage 1: Intent Extraction</h3>
+                  <span class="step-status">Idle</span>
+                </div>
+                <p>Parser extracts high-level entities, actors, and functional scopes.</p>
+                <div class="step-progress-bar"><div class="progress-fill"></div></div>
+              </div>
+            </div>
+
+            <!-- Stage 2 -->
+            <div class="pipeline-step" id="step-2">
+              <div class="step-icon"><i class="fa-solid fa-network-wired"></i></div>
+              <div class="step-content">
+                <div class="step-meta">
+                  <h3>Stage 2: System Design</h3>
+                  <span class="step-status">Idle</span>
+                </div>
+                <p>Generates strict relationships, levels, and access matrix rules.</p>
+                <div class="step-progress-bar"><div class="progress-fill"></div></div>
+              </div>
+            </div>
+
+            <!-- Stage 3 -->
+            <div class="pipeline-step" id="step-3">
+              <div class="step-icon"><i class="fa-solid fa-code"></i></div>
+              <div class="step-content">
+                <div class="step-meta">
+                  <h3>Stage 3: Schema Generation</h3>
+                  <span class="step-status">Idle</span>
+                </div>
+                <p>Produces synchronized UI layouts, API routes, DB layouts, and Auth scopes.</p>
+                <div class="step-progress-bar"><div class="progress-fill"></div></div>
+              </div>
+            </div>
+
+            <!-- Stage 4 -->
+            <div class="pipeline-step" id="step-4">
+              <div class="step-icon"><i class="fa-solid fa-box-tissue"></i></div>
+              <div class="step-content">
+                <div class="step-meta">
+                  <h3>Stage 4: Final Refined Package</h3>
+                  <span class="step-status">Idle</span>
+                </div>
+                <p>Applies cross-layer validation, resolves anomalies, and refines package.</p>
+                <div class="step-progress-bar"><div class="progress-fill"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compiler Logs Terminal -->
+          <div class="terminal-log">
+            <div class="terminal-header">
+              <span><i class="fa-solid fa-rectangle-list"></i> compiler_engine.log</span>
+              <span id="compiler-metrics" class="metrics-summary"></span>
+            </div>
+            <div id="log-output" class="terminal-body">
+              <span class="log-line text-muted">&gt; Ready for compilation instructions...</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Results Workspace (Appears after successful compile) -->
+    <section id="results-panel" class="panel panel-results hidden animate-fade-in">
+      <div class="panel-header">
+        <div class="results-title-bar">
+          <div>
+            <h2><i class="fa-solid fa-box-archive text-gradient"></i> Compiled Architecture Blueprint</h2>
+            <span class="panel-subtitle">Synchronized Multi-Layer Artifact Package</span>
+          </div>
+          <div class="results-telemetry">
+            <div class="telemetry-item">
+              <span class="tel-label"><i class="fa-regular fa-clock"></i> Latency</span>
+              <span id="tel-latency" class="tel-val">0.0s</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="tel-label"><i class="fa-solid fa-receipt"></i> Tokens</span>
+              <span id="tel-tokens" class="tel-val">0</span>
+            </div>
+            <div class="telemetry-item">
+              <span class="tel-label"><i class="fa-solid fa-coins"></i> Total Cost</span>
+              <span id="tel-cost" class="tel-val">$0.000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-body results-body">
+        <!-- Tab Navigation -->
+        <div class="tabs-nav">
+          <button class="tab-btn active" data-tab="tab-ui"><i class="fa-solid fa-laptop-code"></i> UI View</button>
+          <button class="tab-btn" data-tab="tab-api"><i class="fa-solid fa-cloud-arrow-down"></i> API Routes</button>
+          <button class="tab-btn" data-tab="tab-db"><i class="fa-solid fa-database"></i> DB Schema</button>
+          <button class="tab-btn" data-tab="tab-auth"><i class="fa-solid fa-shield-halved"></i> Role Scopes</button>
+          <button class="tab-btn" data-tab="tab-assumptions"><i class="fa-solid fa-list-check"></i> System Logic</button>
+          <button class="tab-btn" data-tab="tab-raw"><i class="fa-solid fa-file-code"></i> Raw JSON</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tabs-content">
+          <!-- UI Tab -->
+          <div class="tab-pane active" id="tab-ui">
+            <div class="ui-blueprint">
+              <div class="ui-mock-browser">
+                <div class="mock-browser-header">
+                  <div class="mock-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
+                  <div class="mock-address-bar" id="mock-app-name">SaaS Portal</div>
+                </div>
+                <div class="mock-browser-body">
+                  <aside class="mock-sidebar">
+                    <nav id="mock-nav">
+                      <!-- Links render here -->
+                    </nav>
+                  </aside>
+                  <section class="mock-content">
+                    <div id="mock-page-canvas">
+                      <!-- Dynamic page visualization -->
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- API Tab -->
+          <div class="tab-pane" id="tab-api">
+            <div class="api-grid-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>Route Path</th>
+                    <th>Required Role(s)</th>
+                    <th>Entity Binds</th>
+                    <th>Payload Parameters</th>
+                  </tr>
+                </thead>
+                <tbody id="api-routes-body">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DB Tab -->
+          <div class="tab-pane" id="tab-db">
+            <div class="db-tables-grid" id="db-tables-grid">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Auth Tab -->
+          <div class="tab-pane" id="tab-auth">
+            <div class="auth-grid-container" id="auth-scopes-container">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Assumptions Tab -->
+          <div class="tab-pane" id="tab-assumptions">
+            <div class="assumptions-list" id="assumptions-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Raw Tab -->
+          <div class="tab-pane" id="tab-raw">
+            <pre class="code-block"><code id="raw-json-code"></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="app-footer animate-fade-in">
+    <p>AI Signal Compiler Pipeline &copy; 2026. Self-Healing Codebase Generation.</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
