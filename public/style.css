@@ -1007,3 +1007,204 @@ textarea:focus {
   margin-top: 2rem;
   font-weight: 700;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PDF EXPORT REPORT STYLES (Print Optimized)
+   ───────────────────────────────────────────────────────────────────────────── */
+.pdf-report {
+  background-color: #FFFFFF !important;
+  color: #101015 !important;
+  padding: 40px !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+
+.pdf-header {
+  border-bottom: 4px solid #000000 !important;
+  padding-bottom: 20px !important;
+  margin-bottom: 30px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+}
+
+.pdf-logo h1 {
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  color: #000000 !important;
+  letter-spacing: 1px !important;
+}
+
+.pdf-meta-badge {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11px !important;
+  background-color: #F1F1F1 !important;
+  border: 1px solid #000000 !important;
+  padding: 4px 10px !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+}
+
+.pdf-section {
+  page-break-after: always !important;
+  margin-bottom: 40px !important;
+}
+
+.pdf-section:last-child {
+  page-break-after: avoid !important;
+}
+
+.pdf-section h2 {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #000000 !important;
+  padding-bottom: 8px !important;
+  margin-bottom: 20px !important;
+  text-transform: uppercase !important;
+  color: #000000 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.pdf-telemetry-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 15px !important;
+  margin-bottom: 30px !important;
+}
+
+.pdf-tel-card {
+  background-color: #F8F9FA !important;
+  border: 2px solid #000000 !important;
+  padding: 12px !important;
+  text-align: center !important;
+  box-shadow: 3px 3px 0px #000000 !important;
+}
+
+.pdf-tel-label {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  color: #6C757D !important;
+}
+
+.pdf-tel-val {
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  color: #000000 !important;
+}
+
+.pdf-grid-db {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 20px !important;
+}
+
+.pdf-db-card {
+  border: 2px solid #000000 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  margin-bottom: 15px !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-db-header {
+  background-color: #F1F1F1 !important;
+  border-bottom: 2px solid #000000 !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+}
+
+.pdf-db-body {
+  padding: 12px !important;
+}
+
+.pdf-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin-top: 10px !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-table th {
+  background-color: #F1F1F1 !important;
+  border: 2px solid #000000 !important;
+  font-weight: 800 !important;
+  padding: 8px !important;
+  font-size: 12px !important;
+  color: #000000 !important;
+}
+
+.pdf-table td {
+  border: 1px solid #000000 !important;
+  padding: 8px !important;
+  font-size: 11px !important;
+  color: #000000 !important;
+}
+
+.pdf-badge {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  border: 1px solid #000000 !important;
+  padding: 2px 6px !important;
+  background-color: #F1F1F1 !important;
+  color: #000000 !important;
+}
+
+.pdf-badge-method {
+  background-color: #FF6F20 !important;
+  color: #000000 !important;
+}
+
+.pdf-auth-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 15px !important;
+}
+
+.pdf-auth-card {
+  border: 2px solid #000000 !important;
+  padding: 12px !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  background-color: #FFFFFF !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-auth-card h3 {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  border-bottom: 2px solid #000000 !important;
+  padding-bottom: 6px !important;
+  margin-bottom: 10px !important;
+  color: #000000 !important;
+}
+
+.pdf-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+.pdf-list-item {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  font-size: 11px !important;
+  color: #000000 !important;
+}
+
+.pdf-asm-card {
+  border: 2px solid #000000 !important;
+  padding: 12px !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+  margin-bottom: 15px !important;
+  background-color: #FFFFFF !important;
+  page-break-inside: avoid !important;
+}
+

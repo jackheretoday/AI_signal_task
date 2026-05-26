@@ -156,6 +156,11 @@
             <h2><i class="fa-solid fa-box-archive text-gradient"></i> Compiled Architecture Blueprint</h2>
             <span class="panel-subtitle">Synchronized Multi-Layer Artifact Package</span>
           </div>
+          <div class="results-actions">
+            <button id="export-pdf-btn" class="btn btn-export" style="background-color: var(--color-orange); color: var(--color-black); box-shadow: 3px 3px 0px var(--color-black); font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: var(--border-radius); border: var(--border-brutalist); font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: var(--transition);">
+              <i class="fa-solid fa-file-pdf"></i> Export PDF Report
+            </button>
+          </div>
           <div class="results-telemetry">
             <div class="telemetry-item">
               <span class="tel-label"><i class="fa-regular fa-clock"></i> Latency</span>
@@ -264,6 +269,10 @@
     <p>AI Signal Compiler Pipeline &copy; 2026. Self-Healing Codebase Generation.</p>
   </footer>
 
+  <!-- Hidden PDF Print Canvas -->
+  <div id="pdf-report-template" style="display: none;"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
