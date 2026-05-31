@@ -158,9 +158,12 @@
             <h2><i class="fa-solid fa-box-archive text-gradient"></i> Compiled Architecture Blueprint</h2>
             <span class="panel-subtitle">Synchronized Multi-Layer Artifact Package</span>
           </div>
-          <div class="results-actions">
+          <div class="results-actions" style="display: flex; gap: 10px;">
             <button id="export-pdf-btn" class="btn btn-export" style="background-color: var(--color-orange); color: var(--color-black); box-shadow: 3px 3px 0px var(--color-black); font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: var(--border-radius); border: var(--border-brutalist); font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: var(--transition);">
               <i class="fa-solid fa-file-pdf"></i> Export PDF Report
+            </button>
+            <button id="export-openapi-btn" class="btn btn-export" style="background-color: var(--color-cyan); color: var(--color-black); box-shadow: 3px 3px 0px var(--color-black); font-size: 0.9rem; padding: 0.6rem 1.2rem; border-radius: var(--border-radius); border: var(--border-brutalist); font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: var(--transition);">
+              <i class="fa-solid fa-file-code"></i> Export OpenAPI
             </button>
           </div>
           <div class="results-telemetry">
@@ -186,8 +189,11 @@
           <button class="tab-btn active" data-tab="tab-ui"><i class="fa-solid fa-laptop-code"></i> UI View</button>
           <button class="tab-btn" data-tab="tab-api"><i class="fa-solid fa-cloud-arrow-down"></i> API Routes</button>
           <button class="tab-btn" data-tab="tab-db"><i class="fa-solid fa-database"></i> DB Schema</button>
+          <button class="tab-btn" data-tab="tab-erd"><i class="fa-solid fa-diagram-project"></i> ERD Diagram</button>
           <button class="tab-btn" data-tab="tab-auth"><i class="fa-solid fa-shield-halved"></i> Role Scopes</button>
           <button class="tab-btn" data-tab="tab-assumptions"><i class="fa-solid fa-list-check"></i> System Logic</button>
+          <button class="tab-btn" data-tab="tab-score"><i class="fa-solid fa-chart-simple"></i> Quality Score</button>
+          <button class="tab-btn" data-tab="tab-advisor"><i class="fa-solid fa-user-tie"></i> Architect Review</button>
           <button class="tab-btn" data-tab="tab-raw"><i class="fa-solid fa-file-code"></i> Raw JSON</button>
         </div>
 
@@ -258,8 +264,59 @@
             </div>
           </div>
 
+          <!-- Quality Score Tab -->
+          <div class="tab-pane" id="tab-score">
+            <div class="scoring-container" style="display: flex; flex-direction: column; gap: 2rem;">
+              <div class="overall-score-panel animate-fade-in" style="background: var(--color-dark-gray); border: var(--border-brutalist); border-radius: var(--border-radius); padding: 2rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 4px 4px 0px var(--color-black);">
+                <div>
+                  <h3 style="font-size: 1.5rem; color: var(--color-white); margin-bottom: 0.5rem;">Overall Architecture Quality Score</h3>
+                  <p class="tagline" style="color: var(--color-muted); font-size: 0.9rem; margin: 0;">Weighted performance rating compiled from concrete schema audit checks.</p>
+                </div>
+                <div id="overall-score-badge" style="font-size: 3rem; font-weight: 800; padding: 1rem 2rem; border-radius: var(--border-radius); border: var(--border-brutalist); background: var(--color-black); color: var(--color-primary); box-shadow: 3px 3px 0px var(--color-black); line-height: 1;">--</div>
+              </div>
+              
+              <div class="dimension-scores-grid" id="dimension-scores-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                <!-- Rendered dynamically -->
+              </div>
+              
+              <div class="findings-section animate-fade-in" style="background: var(--color-dark-gray); border: var(--border-brutalist); border-radius: var(--border-radius); padding: 2rem; box-shadow: 4px 4px 0px var(--color-black);">
+                <h3 style="font-size: 1.3rem; margin-top: 0; margin-bottom: 1.5rem; color: var(--color-white); display: flex; align-items: center; gap: 0.5rem;"><i class="fa-solid fa-clipboard-list text-gradient"></i> Key Assessment Findings</h3>
+                <div class="findings-list" id="score-findings-list" style="display: flex; flex-direction: column; gap: 1rem;">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Architect Review Tab -->
+          <div class="tab-pane" id="tab-advisor">
+            <div class="advisor-container" style="display: flex; flex-direction: column; gap: 2rem;">
+              <div class="advisor-intro-header animate-fade-in" style="background: var(--color-dark-gray); border: var(--border-brutalist); border-radius: var(--border-radius); padding: 2rem; box-shadow: 4px 4px 0px var(--color-black);">
+                <h3 style="font-size: 1.4rem; color: var(--color-white); margin-top: 0; margin-bottom: 0.5rem;"><i class="fa-solid fa-user-tie text-gradient"></i> Principal Architect Review</h3>
+                <p class="tagline" style="color: var(--color-muted); font-size: 0.95rem; margin: 0;">Structured architectural pattern recommendations, rationale analysis, and concrete implementation actions prepared by a principal architect.</p>
+              </div>
+              <div class="advisor-cards-grid" id="advisor-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ERD Tab -->
+          <div class="tab-pane" id="tab-erd">
+            <div class="erd-container" style="background: #0b0f19; padding: 2rem; border-radius: 8px; border: 1px solid #1e293b; overflow: auto; display: flex; justify-content: center; align-items: center; min-height: 400px; width: 100%; box-sizing: border-box;">
+              <div id="erd-svg-container" style="width: 100%; max-width: 100%; display: flex; justify-content: center; align-items: center;">
+                <p class="tagline" style="color: var(--color-muted); font-size: 0.95rem; text-align: center; margin: 0;">Run a compilation to generate the Entity Relationship Diagram.</p>
+              </div>
+            </div>
+          </div>
+
           <!-- Raw Tab -->
           <div class="tab-pane" id="tab-raw">
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
+              <button id="copy-json-btn" class="btn btn-compile" style="width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; height: auto;">
+                <i class="fa-solid fa-copy"></i> Copy JSON
+              </button>
+            </div>
             <pre class="code-block"><code id="raw-json-code"></code></pre>
           </div>
         </div>
