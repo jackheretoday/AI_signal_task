@@ -548,6 +548,44 @@ function stripToJSON(rawText) {
  * @param {string} userPrompt        - Contextual data for this stage
  * @returns {{ text: string, inputTokens: number, outputTokens: number }}
  */
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPERS: Rate Limit and Transient Error Classifiers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Classifies if an error represents a rate limit / quota exhaustion.
+ */
+function isRateLimitError(status, msg) {
+  return (status === 429) ||
+    (typeof status === "string" && status === "RESOURCE_EXHAUSTED") ||
+    msg.includes("quota") ||
+    msg.includes("rate limit") ||
+    msg.includes("resource_exhausted") ||
+    msg.includes("resource exhausted") ||
+    msg.includes("exhausted");
+}
+
+/**
+ * Classifies if an error is transient (rate limits, 5xx, or other temporary outages).
+ */
+function isTransientError(status, msg) {
+  return isRateLimitError(status, msg) ||
+    (typeof status === "number" && (status >= 500 && status < 600)) ||
+    (typeof status === "string" && ["INTERNAL", "UNAVAILABLE"].includes(status)) ||
+    msg.includes("temporary") ||
+    msg.includes("unavailable");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  HELPER: Call Gemini with system instruction + user prompt
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * callGemini
+ * @param {string} systemInstruction - Compiler module directive
+ * @param {string} userPrompt        - Contextual data for this stage
+ * @returns {{ text: string, inputTokens: number, outputTokens: number }}
+ */
 async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayMs = 2000) {
   const isNvidia = activeApiKey.startsWith("nvapi-") || activeApiKey.startsWith("AQ.Ab");
 
@@ -593,16 +631,7 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
       const status = err.status ?? err.statusCode ?? err.code;
       const msg = String(err.message || err).toLowerCase();
 
-      const isRateLimitOrQuota =
-        (status === 429) ||
-        (typeof status === "string" && status === "RESOURCE_EXHAUSTED") ||
-        msg.includes("quota") ||
-        msg.includes("rate limit") ||
-        msg.includes("resource_exhausted") ||
-        msg.includes("resource exhausted") ||
-        msg.includes("exhausted");
-
-      if (isRateLimitOrQuota && activeApiKey !== GEMINI_KEY_2 && GEMINI_KEY_2) {
+      if (isRateLimitError(status, msg) && activeApiKey !== GEMINI_KEY_2 && GEMINI_KEY_2) {
         console.warn(
           `\n🚨 [NVIDIA API KEY EXHAUSTED] Rate limit or quota hit on primary key (status: ${status || "unknown"}). \n` +
           `Switching to backup API key: ${GEMINI_KEY_2.slice(0, 8)}...\n`
@@ -612,14 +641,10 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
         return callGemini(systemInstruction, userPrompt, 3, delayMs);
       }
 
-      const isTransient =
-        (typeof status === "number" && (status === 429 || (status >= 500 && status < 600))) ||
-        msg.includes("quota") || msg.includes("rate limit") || msg.includes("temporary") || msg.includes("unavailable");
-
-      if (isTransient && retriesLeft > 0) {
+      if (isTransientError(status, msg) && retriesLeft > 0) {
         console.warn(
-          `\n⚠️ [NVIDIA API] Transient error (status: ${status || "unknown"}). ` +
-          `Retrying in ${delayMs}ms... (${retriesLeft} retries left). ` +
+          `\n⚠️ [NVIDIA API] Transient error (status: ${status || "unknown"}). \n` +
+          `Retrying in ${delayMs}ms... (${retriesLeft} retries left). \n` +
           `Reason: ${err.message || err}\n`
         );
         await new Promise(resolve => setTimeout(resolve, delayMs));
@@ -655,17 +680,7 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
     const status = err.status ?? err.statusCode ?? err.code;
     const msg = String(err.message || err).toLowerCase();
     
-    // Check for rate limit or quota exhaustion to trigger API key fallback
-    const isRateLimitOrQuota =
-      (status === 429) ||
-      (typeof status === "string" && status === "RESOURCE_EXHAUSTED") ||
-      msg.includes("quota") ||
-      msg.includes("rate limit") ||
-      msg.includes("resource_exhausted") ||
-      msg.includes("resource exhausted") ||
-      msg.includes("exhausted");
-
-    if (isRateLimitOrQuota && activeApiKey !== GEMINI_KEY_2 && GEMINI_KEY_2) {
+    if (isRateLimitError(status, msg) && activeApiKey !== GEMINI_KEY_2 && GEMINI_KEY_2) {
       console.warn(
         `\n🚨 [GEMINI API KEY EXHAUSTED] Rate limit or quota hit on primary key (status: ${status || "unknown"}). \n` +
         `Switching to backup API key: ${GEMINI_KEY_2.slice(0, 8)}...\n`
@@ -675,27 +690,17 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
       return callGemini(systemInstruction, userPrompt, 3, delayMs);
     }
 
-    // Classify if the error is transient:
-    // - 5xx status codes
-    // - String statuses: INTERNAL, UNAVAILABLE
-    // - 429 / RESOURCE_EXHAUSTED (rate-limit / quota spikes)
-    // - Common transient words in message
-    const isTransient = 
-      (typeof status === "number" && (status === 429 || (status >= 500 && status < 600))) ||
-      (typeof status === "string" && ["RESOURCE_EXHAUSTED", "INTERNAL", "UNAVAILABLE"].includes(status)) ||
-      msg.includes("quota") || msg.includes("rate limit") || msg.includes("temporary") || msg.includes("unavailable");
-
-    if (isTransient && retriesLeft > 0) {
+    if (isTransientError(status, msg) && retriesLeft > 0) {
       console.warn(
         `\n⚠️ [GEMINI API] Transient error (status: ${status || "unknown"}). \n` +
-        `Retrying in ${delayMs}ms... (${retriesLeft} retries left). \n` +
+        `Retrying in ${delayMs}ms... (${retriesLeft} retries left). 
+` +
         `Reason: ${err.message || err}\n`
       );
       await new Promise(resolve => setTimeout(resolve, delayMs));
       return callGemini(systemInstruction, userPrompt, retriesLeft - 1, delayMs * 2);
     }
     
-    // Throw error if it's non-recoverable or retries are exhausted
     throw err;
   }
 }
