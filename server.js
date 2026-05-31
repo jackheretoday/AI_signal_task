@@ -636,6 +636,26 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
     const status = err.status ?? err.statusCode ?? err.code;
     const msg = String(err.message || err).toLowerCase();
     
+    // Check for rate limit or quota exhaustion to trigger API key fallback
+    const isRateLimitOrQuota =
+      (status === 429) ||
+      (typeof status === "string" && status === "RESOURCE_EXHAUSTED") ||
+      msg.includes("quota") ||
+      msg.includes("rate limit") ||
+      msg.includes("resource_exhausted") ||
+      msg.includes("resource exhausted") ||
+      msg.includes("exhausted");
+
+    if (isRateLimitOrQuota && activeApiKey !== GEMINI_KEY_2 && GEMINI_KEY_2) {
+      console.warn(
+        `\n🚨 [GEMINI API KEY EXHAUSTED] Rate limit or quota hit on primary key (status: ${status || "unknown"}). \n` +
+        `Switching to backup API key: ${GEMINI_KEY_2.slice(0, 8)}...\n`
+      );
+      activeApiKey = GEMINI_KEY_2;
+      genai = new GoogleGenAI({ apiKey: activeApiKey });
+      return callGemini(systemInstruction, userPrompt, 3, delayMs);
+    }
+
     // Classify if the error is transient:
     // - 5xx status codes
     // - String statuses: INTERNAL, UNAVAILABLE
