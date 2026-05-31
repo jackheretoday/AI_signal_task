@@ -226,6 +226,38 @@ const FinalRefinedSchema = z.object({
   ).min(1),
 });
 
+// ── Stage 5: Quality Scoring ──────────────────────────────────────────────────
+const QualityScoreFindingSchema = z.object({
+  dimension: z.string(),
+  issue: z.string(),
+  deduction: z.number(),
+  recommendation: z.string()
+});
+
+const QualityScoreSchema = z.object({
+  scores: z.object({
+    security: z.number().min(0).max(100),
+    scalability: z.number().min(0).max(100),
+    maintainability: z.number().min(0).max(100),
+    reliability: z.number().min(0).max(100),
+    compliance: z.number().min(0).max(100)
+  }),
+  overallScore: z.number().min(0).max(100),
+  findings: z.array(QualityScoreFindingSchema)
+});
+
+// ── Stage 6: AI Advisor ───────────────────────────────────────────────────────
+const RecommendationSchema = z.object({
+  trigger: z.string(),
+  pattern: z.string(),
+  rationale: z.string(),
+  implementation: z.string()
+});
+
+const ArchitectAdvisorSchema = z.object({
+  recommendations: z.array(RecommendationSchema)
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  ███████╗████████╗ █████╗  ██████╗ ███████╗     5
 //  COST, LATENCY & PERFORMANCE METRICS LOGGER
