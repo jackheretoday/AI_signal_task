@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const assumptionsList   = document.getElementById("assumptions-list");
   const rawJsonCode      = document.getElementById("raw-json-code");
   const erdSvgContainer  = document.getElementById("erd-svg-container");
+  const c4SvgContainer   = document.getElementById("c4-svg-container");
   const copyJsonBtn      = document.getElementById("copy-json-btn");
 
   const exportPdfBtn     = document.getElementById("export-pdf-btn");
@@ -203,6 +204,13 @@ document.addEventListener("DOMContentLoaded", () => {
       erdSvgContainer.innerHTML = result.erdSvg;
     } else {
       erdSvgContainer.innerHTML = `<p class="tagline" style="color: var(--color-muted); font-size: 0.95rem; text-align: center; margin: 0;">No ERD SVG available.</p>`;
+    }
+
+    // Render C4 Tab
+    if (result.c4ContextSvg) {
+      c4SvgContainer.innerHTML = result.c4ContextSvg;
+    } else {
+      c4SvgContainer.innerHTML = `<p class="tagline" style="color: var(--color-muted); font-size: 0.95rem; text-align: center; margin: 0;">No C4 Context SVG available.</p>`;
     }
 
     const schemas = result.finalSchemas || result;
@@ -685,12 +693,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const pageSec2 = 4;
     const pageSec3 = pageSec2 + uiPagesChunks.length;
     const pageSec4 = pageSec3 + apiRoutesChunks.length;
-    const pageSec5 = pageSec4 + 1; // ERD is exactly 1 page
-    const pageSec6 = pageSec5 + dbTablesChunks.length;
-    const pageSec7 = pageSec6 + authScopesChunks.length;
-    const pageSec8 = pageSec7 + assumptionsChunks.length;
-    const pageSec9 = pageSec8 + 1;
+    const pageSec5 = pageSec4 + 1; // C4 Context is exactly 1 page
+    const pageSec6 = pageSec5 + 1; // ERD is exactly 1 page
+    const pageSec7 = pageSec6 + dbTablesChunks.length;
+    const pageSec8 = pageSec7 + authScopesChunks.length;
+    const pageSec9 = pageSec8 + assumptionsChunks.length;
     const pageSec10 = pageSec9 + 1;
+    const pageSec11 = pageSec10 + 1;
 
     // ── CHAPTER 2.0: UI Blueprints (Atomic Card blocks with page-break protection)
     const uiPagesHtml = uiPagesChunks.map((chunk, chunkIdx) => {
@@ -781,11 +790,27 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }).join("");
 
-    // ── CHAPTER 4.0: Entity Relationship Diagram
-    const erdHtml = `
+    // ── CHAPTER 4.0: System Context Diagram (C4 Level 1)
+    const c4Html = `
       <div class="pdf-page" style="page-break-inside: avoid;">
         <div class="pdf-chapter-header">
           <span class="pdf-chapter-num">Section 4.0</span>
+          <h2>System Context Diagram (C4 Level 1)</h2>
+        </div>
+        <div class="pdf-chapter-desc">
+          High-level system context diagram illustrating user roles, the core system boundary, and active external system integrations.
+        </div>
+        <div style="page-break-inside: avoid; border: 1px solid #CBD5E1; border-radius: 6px; padding: 15px; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          ${lastCompilationResult.c4ContextSvg || '<p style="color:#A0AEC0;">No C4 Context Diagram available</p>'}
+        </div>
+      </div>
+    `;
+
+    // ── CHAPTER 5.0: Entity Relationship Diagram
+    const erdHtml = `
+      <div class="pdf-page" style="page-break-inside: avoid;">
+        <div class="pdf-chapter-header">
+          <span class="pdf-chapter-num">Section 5.0</span>
           <h2>Entity Relationship Diagram</h2>
         </div>
         <div class="pdf-chapter-desc">
@@ -839,7 +864,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <div class="pdf-page">
           <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 5.${chunkIdx + 1}</span>
+            <span class="pdf-chapter-num">Section 6.${chunkIdx + 1}</span>
             <h2>Relational Database Schema Architecture ${dbTablesChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
           </div>
           <div class="pdf-chapter-desc">
@@ -885,7 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <div class="pdf-page">
           <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 6.${chunkIdx + 1}</span>
+            <span class="pdf-chapter-num">Section 7.${chunkIdx + 1}</span>
             <h2>Role-Based Access Control (RBAC) Policies ${authScopesChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
           </div>
           <div class="pdf-chapter-desc">
@@ -918,7 +943,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <div class="pdf-page">
           <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 7.${chunkIdx + 1}</span>
+            <span class="pdf-chapter-num">Section 8.${chunkIdx + 1}</span>
             <h2>Derived System Design Assumptions ${assumptionsChunks.length > 1 ? `— Part ${chunkIdx + 1}` : ''}</h2>
           </div>
           <div class="pdf-chapter-desc">
@@ -994,39 +1019,44 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span class="pdf-toc-page-num">${pageSec3}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Section 4.0 : Entity Relationship Diagram</span>
+                <span class="pdf-toc-name">Section 4.0 : System Context Diagram (C4 Level 1)</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec4}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Section 5.0 : Relational Database Schema Architecture</span>
+                <span class="pdf-toc-name">Section 5.0 : Entity Relationship Diagram</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec5}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Section 6.0 : Role-Based Access Control (RBAC) Policies</span>
+                <span class="pdf-toc-name">Section 6.0 : Relational Database Schema Architecture</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec6}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Section 7.0 : Derived System Design Assumptions</span>
+                <span class="pdf-toc-name">Section 7.0 : Role-Based Access Control (RBAC) Policies</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec7}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Section 8.0 : Quality Scoring Report</span>
+                <span class="pdf-toc-name">Section 8.0 : Derived System Design Assumptions</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec8}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Section 9.0 : Principal Architect Review</span>
+                <span class="pdf-toc-name">Section 9.0 : Quality Scoring Report</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec9}</span>
               </div>
               <div class="pdf-toc-item">
-                <span class="pdf-toc-name">Appendix : OpenAPI 3.1 Specification</span>
+                <span class="pdf-toc-name">Section 10.0 : Principal Architect Review</span>
                 <div class="pdf-toc-dots"></div>
                 <span class="pdf-toc-page-num">${pageSec10}</span>
+              </div>
+              <div class="pdf-toc-item">
+                <span class="pdf-toc-name">Appendix : OpenAPI 3.1 Specification</span>
+                <div class="pdf-toc-dots"></div>
+                <span class="pdf-toc-page-num">${pageSec11}</span>
               </div>
             </div>
           </div>
@@ -1064,15 +1094,16 @@ document.addEventListener("DOMContentLoaded", () => {
         <!-- DYNAMIC SHARDED SECTIONS 2.0 TO 7.0 -->
         ${uiPagesHtml}
         ${apiRoutesHtml}
+        ${c4Html}
         ${erdHtml}
         ${dbTablesHtml}
         ${authScopesHtml}
         ${assumptionsHtml}
 
-        <!-- PAGE: SECTION 8.0 QUALITY SCORING REPORT -->
+        <!-- PAGE: SECTION 9.0 QUALITY SCORING REPORT -->
         <div class="pdf-page" style="page-break-before: always;">
           <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 8.0</span>
+            <span class="pdf-chapter-num">Section 9.0</span>
             <h2>Quality Scoring Report</h2>
           </div>
           <div class="pdf-chapter-desc">
@@ -1136,10 +1167,10 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         </div>
 
-        <!-- PAGE: SECTION 9.0 PRINCIPAL ARCHITECT REVIEW -->
+        <!-- PAGE: SECTION 10.0 PRINCIPAL ARCHITECT REVIEW -->
         <div class="pdf-page" style="page-break-before: always;">
           <div class="pdf-chapter-header">
-            <span class="pdf-chapter-num">Section 9.0</span>
+            <span class="pdf-chapter-num">Section 10.0</span>
             <h2>Principal Architect Review</h2>
           </div>
           <div class="pdf-chapter-desc">

@@ -1011,6 +1011,314 @@ function generateOpenApiSpec(apiSchema, appName) {
   return yaml.dump(openApiDoc);
 }
 
+function generateC4ContextSvg(finalSchemas, appName) {
+  const W = 900;
+  const H = 600;
+  
+  // 1. Persons Extraction
+  const rolesSet = new Set();
+  const rolePermissions = finalSchemas.auth?.rolePermissions || finalSchemas.authSchema?.rolePermissions || [];
+  rolePermissions.forEach(rp => {
+    if (rp.role) rolesSet.add(rp.role.trim());
+  });
+  
+  if (rolesSet.size === 0) {
+    const systemRoles = finalSchemas.systemRoles || [];
+    systemRoles.forEach(r => {
+      if (r.role) rolesSet.add(r.role.trim());
+    });
+  }
+  
+  if (rolesSet.size === 0) {
+    const pages = finalSchemas.ui?.pages || finalSchemas.uiSchema?.pages || [];
+    pages.forEach(p => {
+      if (p.gatedRoles) {
+        p.gatedRoles.forEach(r => rolesSet.add(r.trim()));
+      }
+    });
+  }
+  
+  if (rolesSet.size === 0) {
+    rolesSet.add("User");
+  }
+  
+  const sortedRoles = Array.from(rolesSet).sort();
+  const maxVisiblePersons = 5;
+  const visibleRoles = sortedRoles.slice(0, maxVisiblePersons);
+  const extraPersonsCount = sortedRoles.length - visibleRoles.length;
+  
+  // 2. External Systems Extraction
+  const externalSystemsSet = new Set();
+  const nameMapping = {
+    "stripe": "Stripe",
+    "payment": "Payment Processor",
+    "email": "Email Provider",
+    "smtp": "SMTP Server",
+    "s3": "Amazon S3",
+    "storage": "Cloud Storage",
+    "google": "Google API",
+    "twilio": "Twilio",
+    "sms": "SMS Gateway",
+    "push": "Push Service",
+    "firebase": "Firebase",
+    "sendgrid": "SendGrid"
+  };
+  
+  const assumptions = finalSchemas.systemAssumptions || [];
+  const keywords = Object.keys(nameMapping);
+  assumptions.forEach(asm => {
+    const text = ((asm.assumption || "") + " " + (asm.rationale || "")).toLowerCase();
+    keywords.forEach(kw => {
+      if (text.includes(kw)) {
+        externalSystemsSet.add(nameMapping[kw]);
+      }
+    });
+  });
+  
+  const routes = finalSchemas.api?.routes || finalSchemas.apiSchema?.routes || [];
+  routes.forEach(route => {
+    const path = (route.path || "").toLowerCase();
+    if (path.includes("webhook") || path.includes("callback")) {
+      const match = route.path.match(/(?:webhooks|webhook|callback)\/([^/]+)/i);
+      if (match && match[1]) {
+        let cleanName = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+        if (nameMapping[cleanName.toLowerCase()]) {
+          cleanName = nameMapping[cleanName.toLowerCase()];
+        }
+        externalSystemsSet.add(cleanName);
+      } else {
+        externalSystemsSet.add("External System");
+      }
+    }
+  });
+  
+  const strategy = (finalSchemas.auth?.strategy || finalSchemas.authSchema?.strategy || "").toLowerCase();
+  if (strategy.includes("oauth") || strategy.includes("sso")) {
+    externalSystemsSet.add("Auth Provider");
+  }
+  
+  const sortedExternals = Array.from(externalSystemsSet).sort();
+  const maxVisibleExternals = 6;
+  const visibleExternals = sortedExternals.slice(0, maxVisibleExternals);
+  const extraExternalsCount = sortedExternals.length - visibleExternals.length;
+  
+  // 3. Render System Description
+  let systemDesc = "Core application system";
+  if (finalSchemas.description) {
+    systemDesc = finalSchemas.description;
+  } else if (assumptions.length > 0) {
+    const mainAsm = assumptions.find(a => (a.assumption || "").toLowerCase().includes("platform") || (a.assumption || "").toLowerCase().includes("architecture"));
+    if (mainAsm) {
+      systemDesc = mainAsm.assumption;
+    }
+  }
+  if (systemDesc.length > 80) {
+    systemDesc = systemDesc.slice(0, 77) + "...";
+  }
+  
+  // Helper to wrap text
+  function wrapText(text, maxChars) {
+    const words = text.split(" ");
+    const lines = [];
+    let currentLine = "";
+    words.forEach(word => {
+      if ((currentLine + " " + word).trim().length <= maxChars) {
+        currentLine = (currentLine + " " + word).trim();
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    });
+    if (currentLine) lines.push(currentLine);
+    return lines;
+  }
+  
+  const descLines = wrapText(systemDesc, 36).slice(0, 2);
+  
+  // Start SVG string
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="background:#f4f6f9;">\n`;
+  svg += `  <defs>\n`;
+  svg += `    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">\n`;
+  svg += `      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333" />\n`;
+  svg += `    </marker>\n`;
+  svg += `    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">\n`;
+  svg += `      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.1"/>\n`;
+  svg += `    </filter>\n`;
+  svg += `  </defs>\n`;
+  
+  // ── PERSONS ROW Spacing (Top) ──
+  const finalPersonsList = [...visibleRoles];
+  if (extraPersonsCount > 0) {
+    finalPersonsList.push(`+${extraPersonsCount} More`);
+  }
+  
+  const pCount = finalPersonsList.length;
+  const spacingP = W / (pCount + 1);
+  const personCoords = [];
+  
+  finalPersonsList.forEach((role, i) => {
+    const px = spacingP * (i + 1) - 80;
+    const py = 60;
+    const isExtra = role.startsWith("+");
+    
+    personCoords.push({ x: px + 80, y: py + 80, isExtra });
+    
+    // Box
+    svg += `  <!-- Person Box: ${role} -->\n`;
+    svg += `  <rect x="${px}" y="${py}" width="160" height="80" rx="8" ry="8" fill="#EEF2FF" stroke="#534AB7" stroke-width="1.5" filter="url(#shadow)" />\n`;
+    
+    if (isExtra) {
+      svg += `  <text x="${px + 80}" y="${py + 38}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#534AB7" text-anchor="middle">${role} Roles</text>\n`;
+      svg += `  <text x="${px + 80}" y="${py + 54}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-style="italic" fill="#666" text-anchor="middle">Roles</text>\n`;
+    } else {
+      // Stick figure
+      svg += `  <circle cx="${px + 25}" cy="${py + 28}" r="7" fill="none" stroke="#534AB7" stroke-width="2"/>\n`;
+      svg += `  <line x1="${px + 25}" y1="${py + 35}" x2="${px + 25}" y2="${py + 55}" stroke="#534AB7" stroke-width="2"/>\n`;
+      svg += `  <line x1="${px + 17}" y1="${py + 42}" x2="${px + 33}" y2="${py + 42}" stroke="#534AB7" stroke-width="2"/>\n`;
+      svg += `  <line x1="${px + 25}" y1="${py + 55}" x2="${px + 18}" y2="${py + 68}" stroke="#534AB7" stroke-width="2"/>\n`;
+      svg += `  <line x1="${px + 25}" y1="${py + 55}" x2="${px + 32}" y2="${py + 68}" stroke="#534AB7" stroke-width="2"/>\n`;
+      
+      // Text
+      let displayRole = role;
+      if (role.length > 13) {
+        displayRole = role.slice(0, 11) + "...";
+      }
+      svg += `  <text x="${px + 45}" y="${py + 38}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13" font-weight="700" fill="#1a1a1a">${displayRole}</text>\n`;
+      svg += `  <text x="${px + 45}" y="${py + 54}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-style="italic" fill="#666">User</text>\n`;
+    }
+  });
+  
+  // ── YOUR SYSTEM (Center) ──
+  const sx = 310;
+  const sy = 240;
+  const sw = 280;
+  const sh = 120;
+  
+  svg += `  <!-- Your System Box -->\n`;
+  svg += `  <rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" rx="4" ry="4" fill="#ffffff" stroke="#111111" stroke-width="2.5" filter="url(#shadow)" />\n`;
+  
+  // App Name Truncation
+  const displayAppName = appName.length > 20 ? appName.slice(0, 17) + "..." : appName;
+  svg += `  <text x="${sx + sw/2}" y="${sy + 32}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" fill="#111" text-anchor="middle">${displayAppName}</text>\n`;
+  svg += `  <text x="${sx + sw/2}" y="${sy + 52}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#E05A00" letter-spacing="0.1em" text-anchor="middle">&lt;&lt;SOFTWARE SYSTEM&gt;&gt;</text>\n`;
+  
+  // Description Lines
+  descLines.forEach((line, idx) => {
+    svg += `  <text x="${sx + sw/2}" y="${sy + 80 + idx * 16}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" fill="#555" text-anchor="middle">${line}</text>\n`;
+  });
+  
+  // ── EXTERNAL SYSTEMS ROW Spacing (Bottom) ──
+  const finalExternalsList = [...visibleExternals];
+  if (extraExternalsCount > 0) {
+    finalExternalsList.push(`+${extraExternalsCount} More`);
+  }
+  
+  const eCoords = [];
+  
+  if (finalExternalsList.length === 0) {
+    // Note box
+    const nX = 360;
+    const nY = 460;
+    const nW = 180;
+    const nH = 60;
+    svg += `  <!-- Note box -->\n`;
+    svg += `  <rect x="${nX}" y="${nY}" width="${nW}" height="${nH}" rx="6" ry="6" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.5" stroke-dasharray="3 3" />\n`;
+    svg += `  <text x="${nX + nW/2}" y="${nY + 35}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" fill="#B45309" text-anchor="middle" font-weight="700">No external integrations detected</text>\n`;
+  } else {
+    const eCount = finalExternalsList.length;
+    const spacingE = W / (eCount + 1);
+    
+    finalExternalsList.forEach((name, j) => {
+      const ex = spacingE * (j + 1) - 90;
+      const ey = 460;
+      const isExtra = name.startsWith("+");
+      
+      eCoords.push({ x: ex + 90, y: ey, isExtra, name });
+      
+      svg += `  <!-- External System Box: ${name} -->\n`;
+      if (isExtra) {
+        svg += `  <rect x="${ex}" y="${ey}" width="180" height="80" rx="8" ry="8" fill="#F9FAFB" stroke="#888888" stroke-width="1.5" stroke-dasharray="3 3" filter="url(#shadow)" />\n`;
+        svg += `  <text x="${ex + 90}" y="${ey + 38}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#666" text-anchor="middle">${name} Systems</text>\n`;
+        svg += `  <text x="${ex + 90}" y="${ey + 54}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-style="italic" fill="#888" text-anchor="middle">Systems</text>\n`;
+      } else {
+        svg += `  <rect x="${ex}" y="${ey}" width="180" height="80" rx="8" ry="8" fill="#F9FAFB" stroke="#888888" stroke-width="1.5" stroke-dasharray="4 4" filter="url(#shadow)" />\n`;
+        
+        let displayName = name;
+        if (name.length > 18) {
+          displayName = name.slice(0, 16) + "...";
+        }
+        svg += `  <text x="${ex + 90}" y="${ey + 38}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700" fill="#333" text-anchor="middle">${displayName}</text>\n`;
+        svg += `  <text x="${ex + 90}" y="${ey + 54}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-style="italic" fill="#666" text-anchor="middle">&lt;&lt;External System&gt;&gt;</text>\n`;
+      }
+    });
+  }
+  
+  // ── CONNECTORS: PERSONS → SYSTEM ──
+  personCoords.forEach(coord => {
+    if (coord.isExtra) return;
+    
+    const targetX = Math.max(340, Math.min(560, coord.x));
+    const targetY = 240;
+    
+    // Draw direct line with arrow
+    svg += `  <line x1="${coord.x}" y1="140" x2="${targetX}" y2="${targetY}" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)" />\n`;
+    
+    // Midpoint label
+    const mx = (coord.x + targetX) / 2;
+    const my = (140 + targetY) / 2;
+    svg += `  <rect x="${mx - 24}" y="${my - 8}" width="48" height="16" fill="#f4f6f9" rx="3" />\n`;
+    svg += `  <text x="${mx}" y="${my + 4}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-style="italic" fill="#888" text-anchor="middle">Uses</text>\n`;
+  });
+  
+  // ── CONNECTORS: SYSTEM → EXTERNAL SYSTEMS ──
+  function getConnectorLabel(name) {
+    const lower = name.toLowerCase();
+    if (lower.includes("stripe") || lower.includes("payment")) return "Processes payments via";
+    if (lower.includes("email") || lower.includes("smtp") || lower.includes("sendgrid")) return "Sends emails via";
+    if (lower.includes("s3") || lower.includes("storage")) return "Stores files in";
+    if (lower.includes("auth") || lower.includes("provider")) return "Authenticates via";
+    return "Integrates with";
+  }
+  
+  eCoords.forEach(coord => {
+    if (coord.isExtra) return;
+    
+    const sourceX = Math.max(340, Math.min(560, coord.x));
+    const sourceY = 360;
+    
+    svg += `  <line x1="${sourceX}" y1="${sourceY}" x2="${coord.x}" y2="460" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)" />\n`;
+    
+    // Label midpoint
+    const mx = (sourceX + coord.x) / 2;
+    const my = (sourceY + 460) / 2;
+    const label = getConnectorLabel(coord.name);
+    
+    const textWidth = Math.max(60, label.length * 5.2);
+    svg += `  <rect x="${mx - textWidth/2}" y="${my - 8}" width="${textWidth}" height="16" fill="#f4f6f9" rx="3" />\n`;
+    svg += `  <text x="${mx}" y="${my + 4}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-style="italic" fill="#888" text-anchor="middle">${label}</text>\n`;
+  });
+  
+  // ── LEGEND (Bottom-Left Corner) ──
+  const legY = H - 90;
+  svg += `  <!-- Legend -->\n`;
+  svg += `  <rect x="14" y="${legY}" width="180" height="76" rx="4" ry="4" fill="#ffffff" stroke="#dddddd" stroke-width="1" />\n`;
+  svg += `  <text x="24" y="${legY + 16}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="10" font-weight="700" fill="#666">LEGEND</text>\n`;
+  
+  // Legend items
+  svg += `  <rect x="24" y="${legY + 24}" width="12" height="12" rx="2" fill="#EEF2FF" stroke="#534AB7" stroke-width="1" />\n`;
+  svg += `  <text x="42" y="${legY + 34}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" fill="#333">Internal User</text>\n`;
+  
+  svg += `  <rect x="24" y="${legY + 40}" width="12" height="12" rx="1" fill="#ffffff" stroke="#111111" stroke-width="1.5" />\n`;
+  svg += `  <text x="42" y="${legY + 50}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" fill="#333">This System</text>\n`;
+  
+  svg += `  <rect x="24" y="${legY + 56}" width="12" height="12" rx="2" fill="#F9FAFB" stroke="#888888" stroke-width="1" stroke-dasharray="2 2" />\n`;
+  svg += `  <text x="42" y="${legY + 66}" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" fill="#333">External System</text>\n`;
+  
+  svg += `</svg>`;
+  
+  return svg;
+}
+
 function generateERDSvg(dbSchema) {
   const tables = dbSchema?.tables || [];
   if (tables.length === 0) {
@@ -1646,6 +1954,9 @@ Produce a single minified JSON object matching this schema:
   // Generate ERD SVG from the DB schema
   const erdSvg = generateERDSvg(finalResult.db || finalResult.dbSchema);
 
+  // Generate C4 Context SVG
+  const c4ContextSvg = generateC4ContextSvg(finalResult, finalResult.ui?.appName || "SaaS Platform");
+
   compilationHistory.push({
     event:     "PIPELINE_COMPLETE",
     timestamp: new Date().toISOString(),
@@ -1659,6 +1970,7 @@ Produce a single minified JSON object matching this schema:
     openApiSpec:        openApiSpec,
     compilationFingerprint: compilationFingerprint,
     erdSvg:             erdSvg,
+    c4ContextSvg:       c4ContextSvg,
     stageOutputs: {
       intentExtraction: intentResult,
       systemDesign:     designResult,
