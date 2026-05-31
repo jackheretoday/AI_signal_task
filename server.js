@@ -587,14 +587,11 @@ function isTransientError(status, msg) {
  * @returns {{ text: string, inputTokens: number, outputTokens: number }}
  */
 async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayMs = 2000) {
-  const isNvidia = activeApiKey.startsWith("nvapi-") || activeApiKey.startsWith("AQ.Ab");
+  const isNvidia = activeApiKey.startsWith("nvapi-");
 
   if (isNvidia) {
     let modelToUse = MODEL_ID;
-    // Fallback to a valid NVIDIA model if the configured model is a Google/Gemini model
-    if (modelToUse.startsWith("gemini-")) {
-      modelToUse = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
-    } else if (modelToUse === "Llama-3.3-Nemotron-Super-49b-v1.5" || modelToUse.toLowerCase() === "llama-3.3-nemotron-super-49b-v1.5") {
+    if (modelToUse === "Llama-3.3-Nemotron-Super-49b-v1.5" || modelToUse.toLowerCase() === "llama-3.3-nemotron-super-49b-v1.5") {
       modelToUse = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
     }
 
@@ -2075,7 +2072,7 @@ app.get("/api/debug-key-switch", (req, res) => {
     backupKey: backupMasked,
     activeKey: activeMasked,
     usingBackup: activeApiKey === GEMINI_KEY_2,
-    nvidiaDetectedForActive: activeApiKey.startsWith("nvapi-") || activeApiKey.startsWith("AQ.Ab"),
+    nvidiaDetectedForActive: activeApiKey.startsWith("nvapi-"),
   });
 });
 
