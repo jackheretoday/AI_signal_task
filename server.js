@@ -39,6 +39,8 @@ const crypto     = require("crypto");
 // ─────────────────────────────────────────────────────────────────────────────
 const PORT        = process.env.PORT || 3000;
 const GEMINI_KEY  = process.env.GEMINI_API_KEY || "";
+const GEMINI_KEY_2 = process.env.BACKUP_API_KEY || "";
+let activeApiKey  = GEMINI_KEY;
 const MODEL_ID    = process.env.MODEL_ID || "gemini-2.5-flash"; // Configurable via environment, fallback to 2.5 Flash
 const MAX_REPAIRS = 3; // Maximum surgical self-repair attempts per stage
 let latestOpenApiSpec = null; // In-memory cache for downloaded OpenAPI spec
@@ -52,7 +54,7 @@ const COST_TABLE = {
 // ─────────────────────────────────────────────────────────────────────────────
 // GOOGLE GENAI CLIENT
 // ─────────────────────────────────────────────────────────────────────────────
-const genai = new GoogleGenAI({ apiKey: GEMINI_KEY });
+let genai = new GoogleGenAI({ apiKey: activeApiKey });
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ███████╗████████╗ █████╗  ██████╗ ███████╗     1
