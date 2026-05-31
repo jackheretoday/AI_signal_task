@@ -1011,6 +1011,177 @@ function generateOpenApiSpec(apiSchema, appName) {
   return yaml.dump(openApiDoc);
 }
 
+function generateERDSvg(dbSchema) {
+  const tables = dbSchema?.tables || [];
+  if (tables.length === 0) {
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="10" y="50" fill="#999">No Database Tables</text></svg>`;
+  }
+
+  const tableCoords = new Map();
+  const numCols = 3;
+  const colSpacing = 240;
+  const tableWidth = 200;
+  const headerHeight = 36;
+  const colRowHeight = 28;
+
+  // 1. Calculate row heights first
+  const rowHeights = [];
+  const numRows = Math.ceil(tables.length / numCols);
+  for (let r = 0; r < numRows; r++) {
+    const startIdx = r * numCols;
+    const rowTables = tables.slice(startIdx, startIdx + numCols);
+    let tallestInRow = 0;
+    rowTables.forEach(t => {
+      const h = headerHeight + t.columns.length * colRowHeight;
+      if (h > tallestInRow) tallestInRow = h;
+    });
+    rowHeights.push(tallestInRow);
+  }
+
+  // 2. Map tables to coordinates
+  tables.forEach((t, idx) => {
+    const r = Math.floor(idx / numCols);
+    const c = idx % numCols;
+    const x = c * colSpacing + 30;
+    
+    // y is sum of previous row heights + vertical gap (50px per gap) + 30px padding
+    let y = 30;
+    for (let prevR = 0; prevR < r; prevR++) {
+      y += rowHeights[prevR] + 50;
+    }
+    
+    const h = headerHeight + t.columns.length * colRowHeight;
+    tableCoords.set(t.tableName, {
+      x,
+      y,
+      width: tableWidth,
+      height: h,
+      table: t
+    });
+  });
+
+  // Calculate total dimensions
+  const totalWidth = (Math.min(tables.length, numCols) * colSpacing) + 60;
+  let totalHeight = 30;
+  rowHeights.forEach((h, r) => {
+    totalHeight += h;
+    if (r < rowHeights.length - 1) {
+      totalHeight += 50;
+    }
+  });
+  totalHeight += 30; // bottom padding
+
+  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" width="${totalWidth}" height="${totalHeight}" style="background:#0b0f19;">\n`;
+  svgContent += `  <style>\n`;
+  svgContent += `    .table-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; fill: #ffffff; }\n`;
+  svgContent += `    .col-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 11px; fill: #333333; }\n`;
+  svgContent += `    .col-type { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 10px; fill: #666666; }\n`;
+  svgContent += `    .badge-text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 9px; font-weight: 700; fill: #ffffff; text-anchor: middle; }\n`;
+  svgContent += `  </style>\n`;
+
+  // 3. Draw foreign key connections first so they render under the tables
+  tables.forEach(table => {
+    const coords = tableCoords.get(table.tableName);
+    if (!coords || !table.foreignKeys) return;
+
+    table.foreignKeys.forEach(fk => {
+      const targetCoords = tableCoords.get(fk.referencesTable);
+      if (!targetCoords) {
+        console.warn(`[ERD] Target table not found: ${fk.referencesTable}`);
+        return;
+      }
+
+      const srcColIdx = table.columns.findIndex(c => c.name === fk.column);
+      const targetColIdx = targetCoords.table.columns.findIndex(c => c.name === fk.referencesColumn);
+
+      if (srcColIdx === -1) return;
+
+      const isSelf = table.tableName === fk.referencesTable;
+
+      const srcX = coords.x + tableWidth;
+      const srcY = coords.y + headerHeight + (srcColIdx * colRowHeight) + (colRowHeight / 2);
+
+      // For self-referencing FK, target is on the right side. Otherwise target is on the left side of referenced table.
+      const tgtX = isSelf ? (coords.x + tableWidth) : targetCoords.x;
+      const tgtY = targetCoords.y + headerHeight + (Math.max(0, targetColIdx) * colRowHeight) + (colRowHeight / 2);
+
+      // SVG path: M source_x source_y L (source_x + 20) source_y L (source_x + 20) target_y L target_x target_y
+      const pathD = `M ${srcX} ${srcY} L ${srcX + 20} ${srcY} L ${srcX + 20} ${tgtY} L ${tgtX} ${tgtY}`;
+
+      svgContent += `  <!-- Connection: ${table.tableName}.${fk.column} -> ${fk.referencesTable}.${fk.referencesColumn} -->\n`;
+      svgContent += `  <path d="${pathD}" fill="none" stroke="#E05A00" stroke-width="1.5" stroke-dasharray="4 2" />\n`;
+      svgContent += `  <circle cx="${tgtX}" cy="${tgtY}" r="4" fill="#E05A00" />\n`;
+    });
+  });
+
+  // 4. Draw tables on top
+  tables.forEach(table => {
+    const coords = tableCoords.get(table.tableName);
+    if (!coords) return;
+
+    const { x, y, width, height } = coords;
+
+    svgContent += `  <!-- Table: ${table.tableName} -->\n`;
+    // Table container background and rounded border
+    svgContent += `  <rect x="${x}" y="${y}" width="${width}" height="${height}" rx="6" ry="6" fill="#ffffff" stroke="#cccccc" stroke-width="1.5" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.1));" />\n`;
+    
+    // Header background (#111) with rounded top corners
+    svgContent += `  <path d="M ${x} ${y + 6} A 6 6 0 0 1 ${x + 6} ${y} H ${x + width - 6} A 6 6 0 0 1 ${x + width} ${y + 6} V ${y + headerHeight} H ${x} Z" fill="#111111" />\n`;
+    
+    // Table Name
+    svgContent += `  <text x="${x + 12}" y="${y + 22}" class="table-title">${table.tableName}</text>\n`;
+    
+    // Column rows
+    table.columns.forEach((col, idx) => {
+      const rowY = y + headerHeight + (idx * colRowHeight);
+      const isAlt = idx % 2 === 1;
+      const rowBg = isAlt ? "#f9f9f9" : "#ffffff";
+
+      // Row background
+      svgContent += `  <rect x="${x + 1}" y="${rowY}" width="${width - 2}" height="${colRowHeight}" fill="${rowBg}" />\n`;
+
+      // Determine icons
+      const isPK = idx === 0; // First column is PK
+      const isFK = table.foreignKeys && table.foreignKeys.some(fk => fk.column === col.name);
+      
+      let icon = "🔹";
+      if (isPK) icon = "🔑";
+      else if (isFK) icon = "🔗";
+
+      // Draw Icon and Name
+      svgContent += `  <text x="${x + 10}" y="${rowY + 17}" class="col-text">${icon} ${col.name}</text>\n`;
+
+      // Draw Type
+      const typeStr = col.type.toLowerCase();
+      svgContent += `  <text x="${x + 105}" y="${rowY + 17}" class="col-type">${typeStr}</text>\n`;
+
+      // Draw Badges
+      let badgeX = x + 185;
+      if (isPK) {
+        svgContent += `  <rect x="${badgeX - 16}" y="${rowY + 7}" width="18" height="14" rx="3" fill="#2E7D32" />\n`;
+        svgContent += `  <text x="${badgeX - 7}" y="${rowY + 17}" class="badge-text">PK</text>\n`;
+      } else if (isFK) {
+        svgContent += `  <rect x="${badgeX - 16}" y="${rowY + 7}" width="18" height="14" rx="3" fill="#E05A00" />\n`;
+        svgContent += `  <text x="${badgeX - 7}" y="${rowY + 17}" class="badge-text">FK</text>\n`;
+      } else if (!col.nullable) {
+        svgContent += `  <rect x="${badgeX - 16}" y="${rowY + 7}" width="18" height="14" rx="3" fill="#555555" />\n`;
+        svgContent += `  <text x="${badgeX - 7}" y="${rowY + 17}" class="badge-text">NN</text>\n`;
+      }
+
+      // Add thin line separator between rows
+      if (idx < table.columns.length - 1) {
+        svgContent += `  <line x1="${x + 1}" y1="${rowY + colRowHeight}" x2="${x + width - 1}" y2="${rowY + colRowHeight}" stroke="#eeeeee" stroke-width="1" />\n`;
+      }
+    });
+
+    // Draw bottom border under header to separate from columns
+    svgContent += `  <line x1="${x}" y1="${y + headerHeight}" x2="${x + width}" y2="${y + headerHeight}" stroke="#111111" stroke-width="1" />\n`;
+  });
+
+  svgContent += "</svg>";
+  return svgContent;
+}
+
 /**
  * runCompilationPipeline
  *
