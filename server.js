@@ -549,7 +549,7 @@ function stripToJSON(rawText) {
  * @returns {{ text: string, inputTokens: number, outputTokens: number }}
  */
 async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayMs = 2000) {
-  const isNvidia = GEMINI_KEY.startsWith("nvapi-");
+  const isNvidia = activeApiKey.startsWith("nvapi-") || activeApiKey.startsWith("AQ.Ab");
 
   if (isNvidia) {
     let modelToUse = MODEL_ID;
