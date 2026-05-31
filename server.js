@@ -591,7 +591,10 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
 
   if (isNvidia) {
     let modelToUse = MODEL_ID;
-    if (modelToUse === "Llama-3.3-Nemotron-Super-49b-v1.5" || modelToUse.toLowerCase() === "llama-3.3-nemotron-super-49b-v1.5") {
+    // Fallback to a valid NVIDIA model if the configured model is a Google/Gemini model
+    if (modelToUse.startsWith("gemini-")) {
+      modelToUse = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
+    } else if (modelToUse === "Llama-3.3-Nemotron-Super-49b-v1.5" || modelToUse.toLowerCase() === "llama-3.3-nemotron-super-49b-v1.5") {
       modelToUse = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
     }
 
