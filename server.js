@@ -31,6 +31,8 @@ const cors       = require("cors");
 const { z }      = require("zod");
 const { GoogleGenAI } = require("@google/genai");
 const { performance } = require("perf_hooks");
+const yaml       = require("js-yaml");
+const crypto     = require("crypto");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -39,6 +41,7 @@ const PORT        = process.env.PORT || 3000;
 const GEMINI_KEY  = process.env.GEMINI_API_KEY || "";
 const MODEL_ID    = process.env.MODEL_ID || "gemini-2.5-flash"; // Configurable via environment, fallback to 2.5 Flash
 const MAX_REPAIRS = 3; // Maximum surgical self-repair attempts per stage
+let latestOpenApiSpec = null; // In-memory cache for downloaded OpenAPI spec
 
 // Approximate cost table (USD per 1 million tokens)
 const COST_TABLE = {
@@ -512,6 +515,67 @@ function stripToJSON(rawText) {
  * @returns {{ text: string, inputTokens: number, outputTokens: number }}
  */
 async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayMs = 2000) {
+  const isNvidia = GEMINI_KEY.startsWith("nvapi-");
+
+  if (isNvidia) {
+    let modelToUse = MODEL_ID;
+    if (modelToUse === "Llama-3.3-Nemotron-Super-49b-v1.5" || modelToUse.toLowerCase() === "llama-3.3-nemotron-super-49b-v1.5") {
+      modelToUse = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
+    }
+
+    try {
+      const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GEMINI_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: modelToUse,
+          messages: [
+            { role: "system", content: systemInstruction },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0,
+          top_p: 1
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        const err = new Error(`NVIDIA API error: ${response.status} ${response.statusText} - ${errorText}`);
+        err.status = response.status;
+        throw err;
+      }
+
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content ?? "";
+      const usage = data.usage || {};
+      const inputTokens = usage.prompt_tokens || estimateTokens(userPrompt + systemInstruction);
+      const outputTokens = usage.completion_tokens || estimateTokens(text);
+
+      return { text, inputTokens, outputTokens };
+    } catch (err) {
+      const status = err.status ?? err.statusCode ?? err.code;
+      const msg = String(err.message || err).toLowerCase();
+
+      const isTransient =
+        (typeof status === "number" && (status === 429 || (status >= 500 && status < 600))) ||
+        msg.includes("quota") || msg.includes("rate limit") || msg.includes("temporary") || msg.includes("unavailable");
+
+      if (isTransient && retriesLeft > 0) {
+        console.warn(
+          `\n⚠️ [NVIDIA API] Transient error (status: ${status || "unknown"}). ` +
+          `Retrying in ${delayMs}ms... (${retriesLeft} retries left). ` +
+          `Reason: ${err.message || err}\n`
+        );
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        return callGemini(systemInstruction, userPrompt, retriesLeft - 1, delayMs * 2);
+      }
+      throw err;
+    }
+  }
+
   try {
     const response = await genai.models.generateContent({
       model: MODEL_ID,
@@ -550,8 +614,8 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
 
     if (isTransient && retriesLeft > 0) {
       console.warn(
-        `\n⚠️ [GEMINI API] Transient error (status: ${status || "unknown"}). ` +
-        `Retrying in ${delayMs}ms... (${retriesLeft} retries left). ` +
+        `\n⚠️ [GEMINI API] Transient error (status: ${status || "unknown"}). \n` +
+        `Retrying in ${delayMs}ms... (${retriesLeft} retries left). \n` +
         `Reason: ${err.message || err}\n`
       );
       await new Promise(resolve => setTimeout(resolve, delayMs));
