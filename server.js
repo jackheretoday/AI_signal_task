@@ -42,6 +42,7 @@ const GEMINI_KEY  = process.env.GEMINI_API_KEY || "";
 const GEMINI_KEY_2 = process.env.BACKUP_API_KEY || "";
 let activeApiKey  = GEMINI_KEY;
 const MODEL_ID    = process.env.MODEL_ID || "gemini-2.5-flash"; // Configurable via environment, fallback to 2.5 Flash
+let activeModelId = MODEL_ID;
 const MAX_REPAIRS = 3; // Maximum surgical self-repair attempts per stage
 let latestOpenApiSpec = null; // In-memory cache for downloaded OpenAPI spec
 
@@ -342,7 +343,7 @@ class MetricsLogger {
         ratePer1MInputTokensUSD:  COST_TABLE.inputTokensPerMillion,
         ratePer1MOutputTokensUSD: COST_TABLE.outputTokensPerMillion,
       },
-      model: MODEL_ID,
+      model: activeModelId,
       stages: this.stages,
       repairs: this.repairs,
       totalRepairs: this.repairs.length,
@@ -590,7 +591,7 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
   const isNvidia = activeApiKey.startsWith("nvapi-");
 
   if (isNvidia) {
-    let modelToUse = MODEL_ID;
+    let modelToUse = activeModelId;
     if (modelToUse === "Llama-3.3-Nemotron-Super-49b-v1.5" || modelToUse.toLowerCase() === "llama-3.3-nemotron-super-49b-v1.5") {
       modelToUse = "nvidia/llama-3.3-nemotron-super-49b-v1.5";
     }
@@ -656,7 +657,7 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
 
   try {
     const response = await genai.models.generateContent({
-      model: MODEL_ID,
+      model: activeModelId,
       config: {
         systemInstruction,
         temperature: 0,  // Deterministic — no sampling randomness
@@ -688,6 +689,15 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
       activeApiKey = GEMINI_KEY_2;
       genai = new GoogleGenAI({ apiKey: activeApiKey });
       return callGemini(systemInstruction, userPrompt, 3, delayMs);
+    }
+
+    if (isRateLimitError(status, msg) && activeModelId === "gemini-3.5-flash") {
+      console.warn(
+        `\n⚠️ [MODEL FALLBACK] Quota exceeded for gemini-3.5-flash. \n` +
+        `Downgrading active model to gemini-2.5-flash...\n`
+      );
+      activeModelId = "gemini-2.5-flash";
+      return callGemini(systemInstruction, userPrompt, retriesLeft, delayMs);
     }
 
     if (isTransientError(status, msg) && retriesLeft > 0) {
