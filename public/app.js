@@ -57,7 +57,14 @@ document.addEventListener("DOMContentLoaded", () => {
       
       btn.classList.add("active");
       const targetPane = document.getElementById(btn.getAttribute("data-tab"));
-      if (targetPane) targetPane.classList.add("active");
+      if (targetPane) {
+        targetPane.classList.add("active");
+        // Scroll the results panel into view smoothly so the user sees the active section
+        const resultsPanel = document.getElementById("results-panel");
+        if (resultsPanel) {
+          resultsPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
     });
   });
 
