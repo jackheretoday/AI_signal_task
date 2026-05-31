@@ -561,7 +561,7 @@ async function callGemini(systemInstruction, userPrompt, retriesLeft = 3, delayM
       const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${GEMINI_KEY}`,
+          "Authorization": `Bearer ${activeApiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
