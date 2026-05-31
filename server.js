@@ -1519,6 +1519,133 @@ Rules:
     compilationHistory,
   });
 
+  // ══════════════════════════════════════════════════════════════════════════
+  //  STAGE 5 — ARCHITECTURE QUALITY SCORING ENGINE
+  //  Context: Stage 4 validated finalSchemas (immutable)
+  // ══════════════════════════════════════════════════════════════════════════
+  const stage5Prompt = `
+You are a DETERMINISTIC COMPILER MODULE representing the Architecture Quality Scoring Engine.
+Analyze the complete architectural package defined in Stage 4 context below.
+
+STAGE 4 CONTEXT (immutable):
+${JSON.stringify(finalResult)}
+
+TASK:
+Evaluate the system design and calculate quality scores (0-100) for five specific dimensions using these exact deduction rules based strictly on the schemas:
+
+1. Security (0-100):
+   - Deduct 10 per API endpoint missing a role in its "roles" array.
+   - Deduct 15 if "tokenExpiry" is not defined or is missing in the authSchema rolePermissions.
+   - Deduct 5 per UI route that is gated ("isGated": true) but has no matching allowedRoute in authSchema.rolePermissions.
+
+2. Scalability (0-100):
+   - Deduct 10 per list/GET endpoint missing pagination parameters ("page", "limit", "offset", etc.) in requestPayload.
+   - Deduct 15 if no caching strategy is explicitly mentioned in systemAssumptions.
+   - Deduct 10 if there are no database indexes defined (e.g. unique constraints or indexes).
+
+3. Maintainability (0-100):
+   - Deduct 5 per database table missing a clear description or purpose in its fields/schema.
+   - Deduct 10 if API routes lack versioning prefixes (e.g. no "/v1/" or "/v1" in route paths).
+   - Deduct 8 per system assumption that is marked unresolved or ambiguous.
+
+4. Reliability (0-100):
+   - Deduct 15 if no webhook retry logic is mentioned or defined in the apiSchema/assumptions.
+   - Deduct 10 if no soft delete column ("deleted_at", "deletedAt") is present on any database table.
+   - Deduct 10 if no error response schemas are explicitly documented on endpoints.
+
+5. Compliance (0-100):
+   - Deduct 20 if EU/GDPR-related entities (like users, customer profiles, payment accounts) exist but no data export / delete endpoint exists in apiSchema.
+   - Deduct 15 if user PII fields exist without an explicit encryption attribute.
+
+Scoring Formula:
+overallScore = Weighted average:
+  security * 0.25 + scalability * 0.20 + maintainability * 0.20 + reliability * 0.20 + compliance * 0.15
+
+OUTPUT SCHEMA:
+Produce a single minified JSON object matching this schema:
+{
+  "scores": {
+    "security": number,
+    "scalability": number,
+    "maintainability": number,
+    "reliability": number,
+    "compliance": number
+  },
+  "overallScore": number,
+  "findings": [
+    {
+      "dimension": "Security|Scalability|Maintainability|Reliability|Compliance",
+      "issue": "string description of what you detected",
+      "deduction": number,
+      "recommendation": "string action item"
+    }
+  ]
+}
+  `.trim();
+
+  const { parsed: qualityScoreResult } = await runStage({
+    stageName:         "Stage5_QualityScoring",
+    systemInstruction: COMPILER_SYSTEM_BASE,
+    userPrompt:        stage5Prompt,
+    schema:            QualityScoreSchema,
+    metrics,
+    compilationHistory,
+  });
+
+  // Calculate unique fingerprint
+  const compilationFingerprint = crypto
+    .createHash("sha256")
+    .update(JSON.stringify(finalResult))
+    .digest("hex")
+    .slice(0, 12);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  //  STAGE 6 — AI ARCHITECTURE ADVISOR
+  //  Context: finalSchemas + qualityScoreResult (immutable)
+  // ══════════════════════════════════════════════════════════════════════════
+  const stage6Prompt = `
+You are a principal software architect with 20 years experience.
+Review the following final schemas, quality scores, and findings:
+
+FINAL SCHEMAS:
+${JSON.stringify(finalResult)}
+
+QUALITY SCORES & FINDINGS:
+${JSON.stringify(qualityScoreResult)}
+
+TASK:
+Provide exactly 4 architectural recommendations. Each recommendation must reference a specific pattern, standard, or technology based strictly on your observations of the schemas.
+
+OUTPUT SCHEMA:
+Produce a single minified JSON object matching this schema:
+{
+  "recommendations": [
+    {
+      "trigger": "string describing what you detected in the schema",
+      "pattern": "architectural pattern, standard, or technology name",
+      "rationale": "why this pattern applies to resolve the trigger",
+      "implementation": "one concrete, actionable implementation step"
+    }
+  ]
+}
+  `.trim();
+
+  const { parsed: architectAdvisorResult } = await runStage({
+    stageName:         "Stage6_AIArchitectureAdvisor",
+    systemInstruction: COMPILER_SYSTEM_BASE,
+    userPrompt:        stage6Prompt,
+    schema:            ArchitectAdvisorSchema,
+    metrics,
+    compilationHistory,
+  });
+
+  // Generate and cache OpenAPI YAML spec
+  const openApiSpec = generateOpenApiSpec(finalResult.api || finalResult.apiSchema, finalResult.ui?.appName || "SaaS Platform");
+  latestOpenApiSpec = openApiSpec;
+
+  // Generate ERD SVG from the DB schema
+  const erdSvg = generateERDSvg(finalResult.db || finalResult.dbSchema);
+
   compilationHistory.push({
     event:     "PIPELINE_COMPLETE",
     timestamp: new Date().toISOString(),
@@ -1527,6 +1654,11 @@ Rules:
   return {
     success:            true,
     finalSchemas:       finalResult,
+    qualityScore:       qualityScoreResult,
+    architectAdvisor:   architectAdvisorResult,
+    openApiSpec:        openApiSpec,
+    compilationFingerprint: compilationFingerprint,
+    erdSvg:             erdSvg,
     stageOutputs: {
       intentExtraction: intentResult,
       systemDesign:     designResult,
@@ -1660,6 +1792,20 @@ app.post("/api/compile", async (req, res) => {
       message: err.message || String(err),
     });
   }
+});
+
+// ── OpenAPI Export ────────────────────────────────────────────────────────────
+app.get("/api/export/openapi", (req, res) => {
+  if (!latestOpenApiSpec) {
+    return res.status(400).json({
+      success: false,
+      error: "No compilation found. Run a pipeline first."
+    });
+  }
+
+  res.setHeader("Content-Type", "application/x-yaml");
+  res.setHeader("Content-Disposition", 'attachment; filename="openapi.yaml"');
+  res.send(latestOpenApiSpec);
 });
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
