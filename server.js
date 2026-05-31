@@ -2060,6 +2060,60 @@ app.get("/health", (_req, res) => {
 //  Body: { "prompt": "<natural-language system description>" }
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Debug endpoint to check current API key switching status
+app.get("/api/debug-key-switch", (req, res) => {
+  const primaryMasked = GEMINI_KEY ? `${GEMINI_KEY.slice(0, 8)}...${GEMINI_KEY.slice(-4)}` : "not set";
+  const backupMasked = GEMINI_KEY_2 ? `${GEMINI_KEY_2.slice(0, 8)}...${GEMINI_KEY_2.slice(-4)}` : "not set";
+  const activeMasked = activeApiKey ? `${activeApiKey.slice(0, 8)}...${activeApiKey.slice(-4)}` : "not set";
+
+  res.status(200).json({
+    success: true,
+    primaryKey: primaryMasked,
+    backupKey: backupMasked,
+    activeKey: activeMasked,
+    usingBackup: activeApiKey === GEMINI_KEY_2,
+    nvidiaDetectedForActive: activeApiKey.startsWith("nvapi-") || activeApiKey.startsWith("AQ.Ab"),
+  });
+});
+
+// Simulated endpoint to trigger rate-limiting fallback test
+app.post("/api/simulate-rate-limit", (req, res) => {
+  try {
+    console.log("[DEBUG] Simulating a rate limit error to test key switcher...");
+    const mockError = new Error("Resource exhausted (rate limit simulated).");
+    mockError.status = 429;
+    mockError.code = "RESOURCE_EXHAUSTED";
+
+    const status = mockError.status;
+    const msg = String(mockError.message).toLowerCase();
+
+    if (isRateLimitError(status, msg) && activeApiKey !== GEMINI_KEY_2 && GEMINI_KEY_2) {
+      console.warn(
+        `\n🚨 [SIMULATED KEY EXHAUSTED] Rate limit or quota hit on primary key. \n` +
+        `Switching to backup API key: ${GEMINI_KEY_2.slice(0, 8)}...\n`
+      );
+      activeApiKey = GEMINI_KEY_2;
+      genai = new GoogleGenAI({ apiKey: activeApiKey });
+      return res.status(200).json({
+        success: true,
+        message: "Simulated rate limit successfully triggered API key fallback!",
+        activeKey: `${activeApiKey.slice(0, 8)}...${activeApiKey.slice(-4)}`
+      });
+    }
+
+    return res.status(400).json({
+      success: false,
+      message: "No switcher action performed. Perhaps you are already on the backup key or backup key is not configured.",
+      activeKey: activeApiKey ? `${activeApiKey.slice(0, 8)}...${activeApiKey.slice(-4)}` : "not set"
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
+});
+
 // Request body validator
 const CompileRequestSchema = z.object({
   prompt: z.string().min(10, "Prompt must be at least 10 characters."),
