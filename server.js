@@ -885,6 +885,132 @@ Return only the corrected JSON — no prose, no fences.
   }
 }
 
+function mapPropertyType(fieldName) {
+  const lower = fieldName.toLowerCase();
+  if (fieldName.endsWith("_id") || fieldName.endsWith("Id")) {
+    return { type: "string", format: "uuid" };
+  }
+  if (["amount", "rate", "price", "count"].includes(lower)) {
+    return { type: "number" };
+  }
+  if (fieldName.startsWith("is_") || fieldName.startsWith("has_") || fieldName.startsWith("can_") ||
+      fieldName.startsWith("is") || fieldName.startsWith("has") || fieldName.startsWith("can")) {
+    if (fieldName.startsWith("is_") || fieldName.startsWith("has_") || fieldName.startsWith("can_") ||
+        (fieldName.startsWith("is") && fieldName[2] === fieldName[2]?.toUpperCase()) ||
+        (fieldName.startsWith("has") && fieldName[3] === fieldName[3]?.toUpperCase()) ||
+        (fieldName.startsWith("can") && fieldName[3] === fieldName[3]?.toUpperCase())) {
+      return { type: "boolean" };
+    }
+  }
+  if (fieldName === "created_at" || fieldName === "updated_at" || fieldName === "createdAt" || fieldName === "updatedAt") {
+    return { type: "string", format: "date-time" };
+  }
+  return { type: "string" };
+}
+
+function generateOpenApiSpec(apiSchema, appName) {
+  const routes = apiSchema?.routes || apiSchema?.endpoints || [];
+  const basePath = apiSchema?.basePath || "";
+
+  const openApiDoc = {
+    openapi: "3.1.0",
+    info: {
+      title: appName || "API Specification",
+      version: "1.0.0",
+      description: `Auto-generated OpenAPI 3.1.0 specification for ${appName || "the application"}.`
+    },
+    servers: [
+      {
+        url: basePath ? basePath : "/api/v1"
+      }
+    ],
+    paths: {},
+    components: {
+      securitySchemes: {
+        BearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT"
+        }
+      }
+    }
+  };
+
+  routes.forEach(route => {
+    let path = route.path || "/";
+    if (basePath && path.startsWith(basePath)) {
+      path = path.slice(basePath.length);
+    }
+    if (!path.startsWith("/")) {
+      path = "/" + path;
+    }
+
+    const method = (route.method || "GET").toLowerCase();
+    
+    if (!openApiDoc.paths[path]) {
+      openApiDoc.paths[path] = {};
+    }
+
+    const roles = route.roles || [];
+    const hasAuth = route.auth || roles.length > 0;
+
+    const op = {
+      summary: route.description || `${route.method || "GET"} ${route.entity || "resource"}`,
+      security: hasAuth ? [{ BearerAuth: [] }] : [],
+      responses: {
+        "200": {
+          description: "Success",
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                properties: {}
+              }
+            }
+          }
+        },
+        "401": {
+          description: "Unauthorized"
+        },
+        "422": {
+          description: "Validation Error"
+        }
+      }
+    };
+
+    const resPayload = route.responsePayload || {};
+    const resProps = {};
+    Object.keys(resPayload).forEach(prop => {
+      resProps[prop] = mapPropertyType(prop);
+    });
+    op.responses["200"].content["application/json"].schema.properties = resProps;
+
+    if (["post", "put", "patch"].includes(method)) {
+      const payload = route.requestPayload || route.payload || {};
+      const reqProps = {};
+      Object.keys(payload).forEach(prop => {
+        reqProps[prop] = mapPropertyType(prop);
+      });
+
+      op.requestBody = {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: reqProps
+            }
+          }
+        }
+      };
+    }
+
+    openApiDoc.paths[path][method] = op;
+  });
+
+  return yaml.dump(openApiDoc);
+}
+
 /**
  * runCompilationPipeline
  *
