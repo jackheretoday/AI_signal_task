@@ -2248,13 +2248,16 @@ app.use((err, _req, res, _next) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  START SERVER
 // ─────────────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║               ARCHFORGEX COMPILER — SERVER READY       ║");
-  console.log(`║   Listening on http://localhost:${PORT}                          ║`);
-  console.log(`║   Model: ${MODEL_ID}              ║`);
-  console.log(`║   Max repairs per stage: ${MAX_REPAIRS}                               ║`);
-  console.log("╚══════════════════════════════════════════════════════════════╝");
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log("╔══════════════════════════════════════════════════════════════╗");
+    console.log("║               ARCHFORGEX COMPILER — SERVER READY       ║");
+    console.log(`║   Listening on http://localhost:${PORT}                          ║`);
+    console.log(`║   Model: ${MODEL_ID}              ║`);
+    console.log(`║   Max repairs per stage: ${MAX_REPAIRS}                               ║`);
+    console.log("╚══════════════════════════════════════════════════════════════╝");
+  });
+}
 
 module.exports = app;
+
